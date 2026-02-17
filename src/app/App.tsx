@@ -1,0 +1,27 @@
+import { useState } from "react";
+import { PlayerSetup, Player } from "./components/PlayerSetup";
+import { MatchTracking } from "./components/MatchTracking";
+
+export default function App() {
+  const [matchStarted, setMatchStarted] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
+
+  const handleStartMatch = (players: Player[]) => {
+    setPlayers(players);
+    setMatchStarted(true);
+  };
+
+  const handleBack = () => {
+    setMatchStarted(false);
+  };
+
+  return (
+    <div className="size-full">
+      {!matchStarted ? (
+        <PlayerSetup onStartMatch={handleStartMatch} />
+      ) : (
+        <MatchTracking initialPlayers={players} onBack={handleBack} />
+      )}
+    </div>
+  );
+}

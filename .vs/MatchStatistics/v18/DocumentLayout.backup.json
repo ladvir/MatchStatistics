@@ -1,0 +1,120 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Source\\Private\\MatchStatistics\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0FF9796E-CED9-DAC4-0F36-85BBD0A6C786}|MatchStatistics\\matchstatistics.esproj|c:\\source\\private\\matchstatistics\\matchstatistics\\src\\app\\app.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{0FF9796E-CED9-DAC4-0F36-85BBD0A6C786}|MatchStatistics\\matchstatistics.esproj|solutionrelative:matchstatistics\\src\\app\\app.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Source\\Private\\MatchStatistics\\tsconfig.app.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:tsconfig.app.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0FF9796E-CED9-DAC4-0F36-85BBD0A6C786}|MatchStatistics\\matchstatistics.esproj|c:\\source\\private\\matchstatistics\\matchstatistics\\src\\main.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{0FF9796E-CED9-DAC4-0F36-85BBD0A6C786}|MatchStatistics\\matchstatistics.esproj|solutionrelative:matchstatistics\\src\\main.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0FF9796E-CED9-DAC4-0F36-85BBD0A6C786}|MatchStatistics\\matchstatistics.esproj|c:\\source\\private\\matchstatistics\\matchstatistics\\vite.config.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{0FF9796E-CED9-DAC4-0F36-85BBD0A6C786}|MatchStatistics\\matchstatistics.esproj|solutionrelative:matchstatistics\\vite.config.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 8,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{13b12e3e-c1b4-4539-9371-4fe9a0d523fc}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{131369f2-062d-44a2-8671-91ff31efb4f4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:136:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "tsconfig.app.json",
+              "DocumentMoniker": "C:\\Source\\Private\\MatchStatistics\\tsconfig.app.json",
+              "RelativeDocumentMoniker": "tsconfig.app.json",
+              "ToolTip": "C:\\Source\\Private\\MatchStatistics\\tsconfig.app.json",
+              "RelativeToolTip": "tsconfig.app.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-02-16T13:57:29.31Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "App.tsx",
+              "DocumentMoniker": "C:\\Source\\Private\\MatchStatistics\\matchstatistics\\src\\app\\App.tsx",
+              "RelativeDocumentMoniker": "matchstatistics\\src\\app\\App.tsx",
+              "ToolTip": "C:\\Source\\Private\\MatchStatistics\\matchstatistics\\src\\app\\App.tsx",
+              "RelativeToolTip": "matchstatistics\\src\\app\\App.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2026-02-16T13:54:55.172Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{5c0a8096-0216-4116-858a-17792a4fdd91}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "vite.config.ts",
+              "DocumentMoniker": "C:\\Source\\Private\\MatchStatistics\\matchstatistics\\vite.config.ts",
+              "RelativeDocumentMoniker": "matchstatistics\\vite.config.ts",
+              "ToolTip": "C:\\Source\\Private\\MatchStatistics\\matchstatistics\\vite.config.ts",
+              "RelativeToolTip": "matchstatistics\\vite.config.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2026-02-16T13:52:18.393Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "main.tsx",
+              "DocumentMoniker": "C:\\Source\\Private\\MatchStatistics\\matchstatistics\\src\\main.tsx",
+              "RelativeDocumentMoniker": "matchstatistics\\src\\main.tsx",
+              "ToolTip": "C:\\Source\\Private\\MatchStatistics\\matchstatistics\\src\\main.tsx",
+              "RelativeToolTip": "matchstatistics\\src\\main.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2026-02-16T12:41:31.895Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
