@@ -6,10 +6,10 @@ import { ChevronLeft, RotateCcw } from "lucide-react";
 
 interface MatchTrackingProps {
   initialPlayers: Player[];
-  onBack: () => void;
+  onFinish: (players: Player[], ourScore: number, opponentScore: number) => void;
 }
 
-export function MatchTracking({ initialPlayers, onBack }: MatchTrackingProps) {
+export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [ourScore, setOurScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -51,10 +51,18 @@ export function MatchTracking({ initialPlayers, onBack }: MatchTrackingProps) {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={() => onFinish(players, ourScore, opponentScore)}>
             <ChevronLeft className="size-4" />
           </Button>
           <h1 className="text-xl font-semibold">Průběh utkání</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-gray-500"
+            onClick={() => onFinish(players, ourScore, opponentScore)}
+          >
+            Přehled statistik
+          </Button>
         </div>
 
         {/* Skóre */}
@@ -196,69 +204,6 @@ export function MatchTracking({ initialPlayers, onBack }: MatchTrackingProps) {
           </CardContent>
         </Card>
 
-        {/* Statistiky */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Přehled statistik</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <div className="space-y-1 min-w-[500px]">
-                <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
-                  <div className="w-8">#</div>
-                  <div>Jméno</div>
-                  <div className="w-12 text-center">G</div>
-                  <div className="w-12 text-center">A</div>
-                  <div className="w-12 text-center">+</div>
-                  <div className="w-12 text-center">-</div>
-                  <div className="w-12 text-center">+/-</div>
-                </div>
-                {[...players]
-                  .sort((a, b) => {
-                    const aTotal = a.goals + a.assists;
-                    const bTotal = b.goals + b.assists;
-                    if (bTotal !== aTotal) return bTotal - aTotal;
-                    return b.plusMinus - a.plusMinus;
-                  })
-                  .map((player) => (
-                    <div
-                      key={player.id}
-                      className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
-                    >
-                      <div className="w-8 font-mono text-sm">
-                        {player.number}
-                      </div>
-                      <div className="text-sm truncate">{player.name}</div>
-                      <div className="w-12 text-center font-mono text-sm">
-                        {player.goals}
-                      </div>
-                      <div className="w-12 text-center font-mono text-sm">
-                        {player.assists}
-                      </div>
-                      <div className="w-12 text-center font-mono text-sm text-green-600">
-                        +{player.plus}
-                      </div>
-                      <div className="w-12 text-center font-mono text-sm text-red-600">
-                        -{player.minus}
-                      </div>
-                      <div
-                        className={`w-12 text-center font-mono text-sm font-medium ${
-                          player.plusMinus > 0
-                            ? "text-green-600"
-                            : player.plusMinus < 0
-                            ? "text-red-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        {player.plusMinus > 0 ? "+" : ""}
-                        {player.plusMinus}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

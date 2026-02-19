@@ -13,10 +13,13 @@ import {
   RosterPlayer,
   TeamRoster,
 } from "../services/matchService";
+import { getMatches } from "../services/storageService";
+import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
-  onRosterLoaded: (myTeam: TeamRoster) => void;
-  onManualEntry: () => void;
+  onRosterLoaded: (myTeam: TeamRoster, matchId?: string) => void;
+  onManualEntry: (initialPlayers?: Player[]) => void;
+  onShowStats: () => void;
 }
 
 type LoaderView = "team" | "matches" | "direct";
@@ -71,7 +74,16 @@ function MatchListRow({
   );
 }
 
-export function MatchLoader({ onRosterLoaded, onManualEntry }: MatchLoaderProps) {
+export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: MatchLoaderProps) {
+  const lastPlayers = getMatches()[0]?.players?.map((p) => ({
+    ...p,
+    goals: 0,
+    assists: 0,
+    plus: 0,
+    minus: 0,
+    plusMinus: 0,
+  }));
+
   const [view, setView] = useState<LoaderView>("team");
 
   // Team entry state
@@ -142,7 +154,8 @@ export function MatchLoader({ onRosterLoaded, onManualEntry }: MatchLoaderProps)
 
   const handleUseRoster = () => {
     if (!roster) return;
-    onRosterLoaded(selectedTeam === "home" ? roster.home : roster.away);
+    const team = selectedTeam === "home" ? roster.home : roster.away;
+    onRosterLoaded(team, roster.matchId);
   };
 
   const selectedName = roster
@@ -281,8 +294,20 @@ export function MatchLoader({ onRosterLoaded, onManualEntry }: MatchLoaderProps)
                 </>
               )}
 
-              <Button variant="ghost" className="w-full" onClick={onManualEntry}>
+              <Button variant="ghost" className="w-full" onClick={() => onManualEntry()}>
                 Zadat ručně
+              </Button>
+              {lastPlayers && (
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => onManualEntry(lastPlayers)}
+                >
+                  Použít soupisku z posledního zápasu
+                </Button>
+              )}
+              <Button variant="ghost" className="w-full text-gray-500" onClick={onShowStats}>
+                Přehled statistik
               </Button>
             </CardContent>
           </Card>
