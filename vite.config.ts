@@ -10,6 +10,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api/florbal': {
+        target: 'https://www.ceskyflorbal.cz',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/florbal/, ''),
+      },
+    },
+  },
   resolve: {
     alias: {
       // Alias @ to the src directory

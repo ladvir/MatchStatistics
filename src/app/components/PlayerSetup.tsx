@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Plus, X } from "lucide-react";
+import { ArrowLeft, Plus, X } from "lucide-react";
 
 export interface Player {
   id: string;
@@ -18,10 +18,12 @@ export interface Player {
 
 interface PlayerSetupProps {
   onStartMatch: (players: Player[]) => void;
+  initialPlayers?: Player[];
+  onBack?: () => void;
 }
 
-export function PlayerSetup({ onStartMatch }: PlayerSetupProps) {
-  const [players, setPlayers] = useState<Player[]>([]);
+export function PlayerSetup({ onStartMatch, initialPlayers, onBack }: PlayerSetupProps) {
+  const [players, setPlayers] = useState<Player[]>(initialPlayers ?? []);
   const [number, setNumber] = useState("");
   const [name, setName] = useState("");
 
@@ -52,6 +54,12 @@ export function PlayerSetup({ onStartMatch }: PlayerSetupProps) {
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
+            {onBack && (
+              <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
+                <ArrowLeft className="size-4" />
+                Zpět
+              </Button>
+            )}
             <CardTitle>Příprava sestavy</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
