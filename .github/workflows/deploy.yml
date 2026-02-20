@@ -2,14 +2,16 @@ name: Deploy to Production (FTP)
 
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [master, main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
 
 jobs:
   check-secrets:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest # Using linux for secret check is faster/more reliable
     environment: Production
     steps:
       - name: Check required secrets
@@ -17,21 +19,12 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          missing=0
-          for secret in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
-            if [ -z "${!secret}" ]; then
-              echo "❌ Secret $secret is not set!"
-              missing=1
-            fi
-          done
-          if [ "$missing" -eq 1 ]; then
-            echo "Aborting: One or more required secrets are missing."
+          if [ -z "$FTP_SERVER" ] || [ -z "$FTP_USERNAME" ] || [ -z "$FTP_PASSWORD" ]; then
+            echo "❌ Missing core FTP secrets"
             exit 1
           fi
-          echo "✅ All required secrets are set."
-        shell: bash
+          echo "✅ Secrets verified"
 
   build-frontend:
     runs-on: windows-latest
@@ -49,18 +42,21 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install and Build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
 
-      - name: Build
-        run: pnpm build
+      - name: Verify Build Output
+        shell: bash
+        run: ls -R dist/ # This confirms the files actually exist before we upload
 
-      # --- CRITICAL FIX: Upload the build result so the next job can see it ---
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: dist/
+          path: dist/ # Ensure this matches your vite/webpack config output folder
+          if-no-files-found: error # This will force the build to fail if dist is empty
 
   deploy-frontend:
     runs-on: windows-latest
@@ -68,39 +64,30 @@ jobs:
     environment: Production
     steps:
       - name: Download frontend artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4 # Using v4 for maximum compatibility with upload v4
         with:
           name: frontend-dist
-          path: ./frontend-dist/
+          path: frontend-dist
 
-      - name: Ensure FTP frontend path ends with slash
+      - name: Prepare FTP Path
         id: fixpath
+        shell: bash
         run: |
           path="${{ secrets.FTP_FRONTEND_PATH }}"
           if [ -z "$path" ]; then
-            # If secret is empty, default to the main directory
-            echo "FTP_FRONTEND_PATH_SLASH=${{ secrets.FTP_SERVER_DIR }}" >> $GITHUB_ENV
-          elif [[ "$path" == */ ]]; then
-            echo "FTP_FRONTEND_PATH_SLASH=$path" >> $GITHUB_ENV
+            echo "FINAL_PATH=${{ secrets.FTP_SERVER_DIR }}" >> $GITHUB_ENV
           else
-            echo "FTP_FRONTEND_PATH_SLASH=$path/" >> $GITHUB_ENV
+            # Ensure it ends with a slash
+            [[ "$path" != */ ]] && path="$path/"
+            echo "FINAL_PATH=$path" >> $GITHUB_ENV
           fi
-        shell: bash
 
-      - name: Deploy frontend to FTP
+      - name: Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./frontend-dist/
-          server-dir: ${{ env.FTP_FRONTEND_PATH_SLASH }}
+          server-dir: ${{ env.FINAL_PATH }}
           dangerous-clean-slate: true
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.vscode/**
-
-      - name: Deployment completed
-        run: echo "✅ Deployment completed successfully!"
