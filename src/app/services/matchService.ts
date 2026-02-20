@@ -30,6 +30,16 @@ export type FetchMatchListResult =
   | { ok: true; data: MatchListItem[] }
   | { ok: false; error: string };
 
+export interface TeamSearchResult {
+  teamId: string;
+  teamName: string;
+  city?: string;
+}
+
+export type FetchTeamSearchResult =
+  | { ok: true; data: TeamSearchResult[] }
+  | { ok: false; error: string };
+
 function parseTeamDiv(div: Element, fallbackName: string): TeamRoster {
   // Determine team name
   let teamName = '';
@@ -227,6 +237,62 @@ export async function fetchMatchRoster(matchId: string): Promise<FetchRosterResu
 
   try {
     const data = parseRosterHtml(html, matchId);
+    return { ok: true, data };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : 'Neznámá chyba při parsování.',
+    };
+  }
+}
+
+function parseTeamSearchHtml(html: string): TeamSearchResult[] {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  const results: TeamSearchResult[] = [];
+
+  doc.querySelectorAll('a[href*="/team/detail/overview/"]').forEach((link) => {
+    const href = link.getAttribute('href') ?? '';
+    const idMatch = href.match(/\/team\/detail\/overview\/(\d+)/);
+    if (!idMatch) return;
+
+    const teamName = link.textContent?.trim() ?? '';
+    if (!teamName) return;
+
+    // City is in the 6th <td> of the same row (index 5)
+    const row = link.closest('tr');
+    const cells = row ? Array.from(row.querySelectorAll('td')) : [];
+    const city = cells[5]?.textContent?.trim() || undefined;
+
+    results.push({ teamId: idMatch[1], teamName, city });
+  });
+
+  return results;
+}
+
+export async function searchTeams(query: string): Promise<FetchTeamSearchResult> {
+  if (query.trim().length < 2) {
+    return { ok: false, error: 'Zadejte alespoň 2 znaky.' };
+  }
+
+  let html: string;
+  try {
+    const params = new URLSearchParams({ 'filter[search]': query.trim(), itemsPerPage: '50' });
+    const response = await fetch(`/api/florbal/directory/teams/?${params}`);
+    if (!response.ok) {
+      return { ok: false, error: `Server vrátil chybu ${response.status}.` };
+    }
+    html = await response.text();
+  } catch {
+    return { ok: false, error: 'Nepodařilo se připojit k ceskyflorbal.cz.' };
+  }
+
+  try {
+    const data = parseTeamSearchHtml(html);
+    if (data.length === 0) {
+      return { ok: false, error: 'Žádné týmy nebyly nalezeny.' };
+    }
     return { ok: true, data };
   } catch (e) {
     return {

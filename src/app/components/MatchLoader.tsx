@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader2, ArrowLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -8,10 +8,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import {
   fetchMatchRoster,
   fetchTeamMatches,
+  searchTeams,
   MatchListItem,
   MatchRoster,
   RosterPlayer,
   TeamRoster,
+  TeamSearchResult,
 } from "../services/matchService";
 import { getMatches } from "../services/storageService";
 import { Player } from "./PlayerSetup";
@@ -109,8 +111,14 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
 
   const [view, setView] = useState<LoaderView>("team");
 
-  // Team entry state
-  const [teamId, setTeamId] = useState("");
+  // Team search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<TeamSearchResult[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Team match list state
+  const [selectedTeamName, setSelectedTeamName] = useState("");
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
   const [matchList, setMatchList] = useState<MatchListItem[] | null>(null);
@@ -127,12 +135,38 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
   const [roster, setRoster] = useState<MatchRoster | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<"home" | "away">("home");
 
-  const handleLoadTeam = async () => {
-    if (!teamId.trim() || loadingTeam) return;
+  // Debounced team search
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      setSearchError(null);
+      return;
+    }
+    setSearchLoading(true);
+    setSearchError(null);
+    const timeout = setTimeout(async () => {
+      const result = await searchTeams(searchQuery);
+      setSearchLoading(false);
+      if (result.ok) {
+        setSearchResults(result.data);
+      } else {
+        setSearchResults(null);
+        setSearchError(result.error);
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timeout);
+      setSearchLoading(false);
+    };
+  }, [searchQuery]);
+
+  const handleTeamSelect = async (teamId: string, teamName: string) => {
+    if (loadingTeam) return;
     setLoadingTeam(true);
     setTeamError(null);
+    setSelectedTeamName(teamName);
 
-    const result = await fetchTeamMatches(teamId.trim());
+    const result = await fetchTeamMatches(teamId);
     setLoadingTeam(false);
 
     if (result.ok) {
@@ -191,6 +225,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
   const goBack = () => {
     setView("team");
     setRosterError(null);
+    setTeamError(null);
   };
 
   return (
@@ -202,37 +237,55 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
               <CardTitle>Načíst soupisku ze ČFbU</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* TEAM ENTRY */}
+              {/* TEAM SEARCH */}
               {view === "team" && (
                 <>
                   <div className="space-y-1">
-                    <Label htmlFor="teamId">ID týmu</Label>
-                    <div className="flex gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
                       <Input
-                        id="teamId"
-                        inputMode="numeric"
-                        value={teamId}
-                        onChange={(e) => setTeamId(e.target.value)}
-                        placeholder="např. 41217"
-                        onKeyDown={(e) => e.key === "Enter" && handleLoadTeam()}
+                        autoFocus
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Hledat tým…"
+                        className="pl-9"
                         disabled={loadingTeam}
                       />
-                      <Button
-                        onClick={handleLoadTeam}
-                        disabled={!teamId.trim() || loadingTeam}
-                      >
-                        {loadingTeam ? (
-                          <>
-                            <Loader2 className="size-4 animate-spin" />
-                            Načítám…
-                          </>
-                        ) : (
-                          "Načíst zápasy"
-                        )}
-                      </Button>
+                      {searchLoading && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 animate-spin text-gray-400" />
+                      )}
                     </div>
                   </div>
+
+                  {searchError && (
+                    <p className="text-sm text-gray-500">{searchError}</p>
+                  )}
+
+                  {searchResults && searchResults.length > 0 && (
+                    <div className="max-h-72 overflow-y-auto space-y-1">
+                      {searchResults.map((t) => (
+                        <button
+                          key={t.teamId}
+                          onClick={() => handleTeamSelect(t.teamId, t.teamName)}
+                          disabled={loadingTeam}
+                          className="w-full flex items-center justify-between p-3 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 text-left transition-colors"
+                        >
+                          <div>
+                            <div className="font-medium text-sm">{t.teamName}</div>
+                            {t.city && <div className="text-xs text-gray-500">{t.city}</div>}
+                          </div>
+                          {loadingTeam && t.teamName === selectedTeamName ? (
+                            <Loader2 className="size-4 animate-spin text-gray-400 shrink-0" />
+                          ) : (
+                            <ChevronRight className="size-4 text-gray-400 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {teamError && <p className="text-sm text-red-600">{teamError}</p>}
+
                   <Button
                     variant="ghost"
                     size="sm"
@@ -252,7 +305,10 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                       <ArrowLeft className="size-4" />
                       Zpět
                     </Button>
-                    <span className="text-sm text-gray-500">{matchList.length} zápasů</span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{selectedTeamName}</div>
+                      <div className="text-xs text-gray-500">{matchList.length} zápasů</div>
+                    </div>
                   </div>
 
                   <div className="max-h-96 overflow-y-auto space-y-1">
