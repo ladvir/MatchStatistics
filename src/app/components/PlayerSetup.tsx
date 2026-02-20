@@ -9,6 +9,7 @@ export interface Player {
   id: string;
   number: string;
   name: string;
+  shots: number;
   goals: number;
   assists: number;
   plus: number;
@@ -33,6 +34,7 @@ export function PlayerSetup({ onStartMatch, initialPlayers, onBack }: PlayerSetu
         id: Date.now().toString(),
         number,
         name,
+        shots: 0,
         goals: 0,
         assists: 0,
         plus: 0,

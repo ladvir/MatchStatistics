@@ -17,7 +17,7 @@ import { getMatches } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
-  onRosterLoaded: (myTeam: TeamRoster, matchId?: string) => void;
+  onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string) => void;
   onManualEntry: (initialPlayers?: Player[]) => void;
   onShowStats: () => void;
 }
@@ -37,6 +37,29 @@ function RosterList({ players }: { players: RosterPlayer[] }) {
           {p.birthYear && <span className="text-gray-400">{p.birthYear}</span>}
         </div>
       ))}
+    </div>
+  );
+}
+
+const EMPTY_ROSTER_ERROR = "Soupisky jsou prázdné. Utkání možná ještě nemá zveřejněnou soupisku.";
+
+function RosterError({
+  error,
+  lastPlayers,
+  onUseLastRoster,
+}: {
+  error: string;
+  lastPlayers?: Player[];
+  onUseLastRoster: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-red-600">{error}</p>
+      {error === EMPTY_ROSTER_ERROR && lastPlayers && (
+        <Button variant="outline" size="sm" onClick={onUseLastRoster}>
+          Použít soupisku z posledního zápasu
+        </Button>
+      )}
     </div>
   );
 }
@@ -155,7 +178,8 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
   const handleUseRoster = () => {
     if (!roster) return;
     const team = selectedTeam === "home" ? roster.home : roster.away;
-    onRosterLoaded(team, roster.matchId);
+    const opponent = selectedTeam === "home" ? roster.away : roster.home;
+    onRosterLoaded(team, roster.matchId, opponent.teamName);
   };
 
   const selectedName = roster
@@ -242,7 +266,13 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                     ))}
                   </div>
 
-                  {rosterError && <p className="text-sm text-red-600">{rosterError}</p>}
+                  {rosterError && (
+                    <RosterError
+                      error={rosterError}
+                      lastPlayers={lastPlayers}
+                      onUseLastRoster={() => onManualEntry(lastPlayers)}
+                    />
+                  )}
 
                   <Button
                     variant="ghost"
@@ -290,7 +320,13 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                       </Button>
                     </div>
                   </div>
-                  {rosterError && <p className="text-sm text-red-600">{rosterError}</p>}
+                  {rosterError && (
+                    <RosterError
+                      error={rosterError}
+                      lastPlayers={lastPlayers}
+                      onUseLastRoster={() => onManualEntry(lastPlayers)}
+                    />
+                  )}
                 </>
               )}
 

@@ -13,10 +13,11 @@ export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) 
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [ourScore, setOurScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
+  const [sortBy, setSortBy] = useState<"default" | "number" | "name">("default");
 
   const updatePlayerStat = (
     playerId: string,
-    stat: "goals" | "assists" | "plus" | "minus"
+    stat: "shots" | "goals" | "assists" | "plus" | "minus"
   ) => {
     setPlayers(
       players.map((p) => {
@@ -38,6 +39,7 @@ export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) 
     setPlayers(
       players.map((p) => ({
         ...p,
+        shots: 0,
         goals: 0,
         assists: 0,
         plus: 0,
@@ -109,40 +111,76 @@ export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) 
 
         {/* Soupiska */}
         <Card>
-          <CardHeader className="relative">
-            <CardTitle>Soupiska</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={resetStats}
-              className="absolute top-3 right-3 h-8 w-8"
-              title="Resetovat statistiky"
-            >
-              <RotateCcw className="size-4" />
-            </Button>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Soupiska</CardTitle>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={sortBy === "number" ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setSortBy(sortBy === "number" ? "default" : "number")}
+                >
+                  #
+                </Button>
+                <Button
+                  variant={sortBy === "name" ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setSortBy(sortBy === "name" ? "default" : "name")}
+                >
+                  A–Z
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={resetStats}
+                  className="h-7 w-7"
+                  title="Resetovat statistiky"
+                >
+                  <RotateCcw className="size-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {/* Hráči */}
-              {players.map((player) => (
+            <div className="space-y-1">
+              {[...players]
+                .sort((a, b) => {
+                  if (sortBy === "number") return (parseInt(a.number) || 0) - (parseInt(b.number) || 0);
+                  if (sortBy === "name") return a.name.localeCompare(b.name, "cs");
+                  return 0;
+                })
+                .map((player) => (
                 <div
                   key={player.id}
-                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border-b last:border-b-0"
+                  className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 p-2 border-b last:border-b-0"
                 >
-                  {/* Jméno a číslo */}
-                  <div className="flex items-center gap-3 min-w-0 flex-shrink">
-                    <div className="w-8 font-mono text-sm flex-shrink-0">{player.number}</div>
-                    <div className="text-sm truncate">{player.name}</div>
+                  {/* Číslo + jméno */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono text-sm w-7 flex-shrink-0">{player.number}</span>
+                    <span className="text-sm truncate">{player.name}</span>
                   </div>
-                  
-                  {/* Statistiky */}
-                  <div className="flex items-center gap-2 justify-end sm:ml-auto flex-wrap">
+
+                  {/* Tlačítka statistik */}
+                  <div className="flex items-center justify-between sm:justify-end sm:ml-auto gap-1">
+                    {/* Střely */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updatePlayerStat(player.id, "shots")}
+                      className="h-11 flex-1 sm:flex-none sm:w-11 p-0 flex flex-col items-center justify-center"
+                    >
+                      <div className="text-sm font-semibold">S</div>
+                      <div className="text-xs text-gray-500">({player.shots ?? 0})</div>
+                    </Button>
+
                     {/* Góly */}
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => updatePlayerStat(player.id, "goals")}
-                      className="h-12 w-12 p-0 flex flex-col items-center justify-center"
+                      className="h-11 flex-1 sm:flex-none sm:w-11 p-0 flex flex-col items-center justify-center"
                     >
                       <div className="text-sm font-semibold">G</div>
                       <div className="text-xs text-gray-500">({player.goals})</div>
@@ -153,7 +191,7 @@ export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) 
                       size="sm"
                       variant="outline"
                       onClick={() => updatePlayerStat(player.id, "assists")}
-                      className="h-12 w-12 p-0 flex flex-col items-center justify-center"
+                      className="h-11 flex-1 sm:flex-none sm:w-11 p-0 flex flex-col items-center justify-center"
                     >
                       <div className="text-sm font-semibold">A</div>
                       <div className="text-xs text-gray-500">({player.assists})</div>
@@ -164,7 +202,7 @@ export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) 
                       size="sm"
                       variant="outline"
                       onClick={() => updatePlayerStat(player.id, "plus")}
-                      className="h-12 w-12 p-0 flex flex-col items-center justify-center"
+                      className="h-11 flex-1 sm:flex-none sm:w-11 p-0 flex flex-col items-center justify-center"
                     >
                       <div className="text-sm font-semibold text-green-600">+</div>
                       <div className="text-xs text-gray-500">({player.plus})</div>
@@ -175,28 +213,12 @@ export function MatchTracking({ initialPlayers, onFinish }: MatchTrackingProps) 
                       size="sm"
                       variant="outline"
                       onClick={() => updatePlayerStat(player.id, "minus")}
-                      className="h-12 w-12 p-0 flex flex-col items-center justify-center"
+                      className="h-11 flex-1 sm:flex-none sm:w-11 p-0 flex flex-col items-center justify-center"
                     >
                       <div className="text-sm font-semibold text-red-600">−</div>
                       <div className="text-xs text-gray-500">({player.minus})</div>
                     </Button>
 
-                    {/* Celková bilance */}
-                    <div className="h-12 w-12 flex flex-col items-center justify-center border rounded bg-gray-50">
-                      <div className="text-xs text-gray-500">+/-</div>
-                      <div
-                        className={`text-sm font-semibold ${
-                          player.plusMinus > 0
-                            ? "text-green-600"
-                            : player.plusMinus < 0
-                            ? "text-red-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        {player.plusMinus > 0 ? "+" : ""}
-                        {player.plusMinus}
-                      </div>
-                    </div>
                   </div>
                 </div>
               ))}

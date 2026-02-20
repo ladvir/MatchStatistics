@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, Loader2, Share2, Trash2 } from "lucide-react";
+import { toPng } from "html-to-image";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { CompletedMatch, getMatches, deleteMatch } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
@@ -24,6 +26,7 @@ function aggregatePlayers(matches: CompletedMatch[]): Player[] {
     for (const p of match.players) {
       const existing = map.get(p.name);
       if (existing) {
+        existing.shots = (existing.shots ?? 0) + (p.shots ?? 0);
         existing.goals += p.goals;
         existing.assists += p.assists;
         existing.plus += p.plus;
@@ -43,37 +46,96 @@ function pluralZapas(n: number): string {
   return "zápasů";
 }
 
-function StatsTable({ players }: { players: Player[] }) {
-  const sorted = [...players].sort((a, b) => {
-    const aTotal = a.goals + a.assists;
-    const bTotal = b.goals + b.assists;
-    if (bTotal !== aTotal) return bTotal - aTotal;
-    return b.plusMinus - a.plusMinus;
+async function captureImage(el: HTMLElement): Promise<string> {
+  return toPng(el, { backgroundColor: "#ffffff", pixelRatio: 2 });
+}
+
+function downloadDataUrl(dataUrl: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `${filename}.png`;
+  a.click();
+}
+
+type SortKey = "number" | "name" | "shots" | "goals" | "assists" | "plus" | "minus" | "plusMinus";
+type SortDir = "asc" | "desc";
+
+function sortPlayers(players: Player[], key: SortKey, dir: SortDir): Player[] {
+  return [...players].sort((a, b) => {
+    let aVal: string | number;
+    let bVal: string | number;
+    if (key === "number") {
+      aVal = parseInt(a.number) || 0;
+      bVal = parseInt(b.number) || 0;
+    } else if (key === "name") {
+      aVal = a.name;
+      bVal = b.name;
+    } else {
+      aVal = (a[key] as number) ?? 0;
+      bVal = (b[key] as number) ?? 0;
+    }
+    if (typeof aVal === "string") {
+      return dir === "asc" ? aVal.localeCompare(bVal as string, "cs") : (bVal as string).localeCompare(aVal, "cs");
+    }
+    return dir === "asc" ? aVal - (bVal as number) : (bVal as number) - aVal;
   });
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <ChevronsUpDown className="size-3 opacity-30" />;
+  return dir === "desc" ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />;
+}
+
+function StatsTable({ players }: { players: Player[] }) {
+  const [sortKey, setSortKey] = useState<SortKey>("goals");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "name" || key === "number" ? "asc" : "desc");
+    }
+  };
+
+  const sorted = sortPlayers(players, sortKey, sortDir);
 
   if (sorted.length === 0) {
     return <p className="text-sm text-gray-500">Žádní hráči.</p>;
   }
 
+  const col = (key: SortKey, label: string, className = "w-10 text-center") => (
+    <button
+      onClick={() => handleSort(key)}
+      className={`${className} flex items-center justify-center gap-0.5 hover:text-gray-900 transition-colors ${sortKey === key ? "text-gray-900" : ""}`}
+    >
+      {label}
+      <SortIcon active={sortKey === key} dir={sortDir} />
+    </button>
+  );
+
   return (
     <div className="overflow-x-auto">
       <div className="space-y-1 min-w-[400px]">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
-          <div className="w-8">#</div>
-          <div>Jméno</div>
-          <div className="w-10 text-center">G</div>
-          <div className="w-10 text-center">A</div>
-          <div className="w-10 text-center">+</div>
-          <div className="w-10 text-center">-</div>
-          <div className="w-10 text-center">+/-</div>
+        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
+          {col("number", "#", "w-8 flex items-center gap-0.5 hover:text-gray-900 transition-colors")}
+          {col("name", "Jméno", "text-left flex items-center gap-0.5 hover:text-gray-900 transition-colors")}
+          {col("shots", "S")}
+          {col("goals", "G")}
+          {col("assists", "A")}
+          {col("plus", "+")}
+          {col("minus", "−")}
+          {col("plusMinus", "+/-")}
         </div>
         {sorted.map((player) => (
           <div
             key={player.id}
-            className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
+            className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
           >
             <div className="w-8 font-mono text-sm">{player.number}</div>
             <div className="text-sm truncate">{player.name}</div>
+            <div className="w-10 text-center font-mono text-sm">{player.shots ?? 0}</div>
             <div className="w-10 text-center font-mono text-sm">{player.goals}</div>
             <div className="w-10 text-center font-mono text-sm">{player.assists}</div>
             <div className="w-10 text-center font-mono text-sm text-green-600">+{player.plus}</div>
@@ -102,6 +164,12 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
     () => getMatches()[0]?.id ?? null,
   );
+  const [sharingMatch, setSharingMatch] = useState(false);
+  const [sharingAll, setSharingAll] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ dataUrl: string; filename: string } | null>(null);
+
+  const matchCardRef = useRef<HTMLDivElement>(null);
+  const allCardRef = useRef<HTMLDivElement>(null);
 
   const handleDelete = (id: string) => {
     deleteMatch(id);
@@ -112,14 +180,68 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
     }
   };
 
+  const handleShareMatch = async () => {
+    if (!matchCardRef.current || sharingMatch) return;
+    setSharingMatch(true);
+    try {
+      const dataUrl = await captureImage(matchCardRef.current);
+      setPreviewImage({ dataUrl, filename: selectedMatch?.label ?? "statistiky" });
+    } finally {
+      setSharingMatch(false);
+    }
+  };
+
+  const handleShareAll = async () => {
+    if (!allCardRef.current || sharingAll) return;
+    setSharingAll(true);
+    try {
+      const dataUrl = await captureImage(allCardRef.current);
+      setPreviewImage({ dataUrl, filename: "statistiky-celkem" });
+    } finally {
+      setSharingAll(false);
+    }
+  };
+
   const selectedMatch = matches.find((m) => m.id === selectedMatchId) ?? null;
   const aggregated = aggregatePlayers(matches);
 
   return (
+    <>
+    <Dialog open={!!previewImage} onOpenChange={(open) => { if (!open) setPreviewImage(null); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Sdílet statistiky</DialogTitle>
+        </DialogHeader>
+        {previewImage && (
+          <div className="space-y-4">
+            <img
+              src={previewImage.dataUrl}
+              alt="Statistiky"
+              className="w-full rounded border"
+            />
+            <Button
+              className="w-full"
+              onClick={() => downloadDataUrl(previewImage.dataUrl, previewImage.filename)}
+            >
+              <Download className="size-4 mr-2" />
+              Stáhnout obrázek
+            </Button>
+            <p className="text-xs text-gray-500 text-center">
+              Na mobilu podržte obrázek prstem → Uložit → sdílejte z galerie přes WhatsApp
+            </p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Přehled statistik</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={onNewMatch}>
+              <ArrowLeft className="size-4" />
+            </Button>
+            <h1 className="text-xl font-semibold">Přehled statistik</h1>
+          </div>
           <Button onClick={onNewMatch}>Nový zápas</Button>
         </div>
 
@@ -179,35 +301,66 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
               </Card>
 
               {selectedMatch && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {selectedMatch.label} · {selectedMatch.ourScore}:{selectedMatch.opponentScore}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <StatsTable players={selectedMatch.players} />
-                  </CardContent>
-                </Card>
+                <div ref={matchCardRef}>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                      <CardTitle className="text-base">
+                        {selectedMatch.label} · {selectedMatch.ourScore}:{selectedMatch.opponentScore}
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleShareMatch}
+                        disabled={sharingMatch}
+                        className="text-gray-500"
+                      >
+                        {sharingMatch ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Share2 className="size-4" />
+                        )}
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <StatsTable players={selectedMatch.players} />
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </TabsContent>
 
             {/* CELKEM */}
             <TabsContent value="all">
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Celkem — {matches.length} {pluralZapas(matches.length)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <StatsTable players={aggregated} />
-                </CardContent>
-              </Card>
+              <div ref={allCardRef}>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <CardTitle>
+                      Celkem — {matches.length} {pluralZapas(matches.length)}
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleShareAll}
+                      disabled={sharingAll}
+                      className="text-gray-500"
+                    >
+                      {sharingAll ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Share2 className="size-4" />
+                      )}
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <StatsTable players={aggregated} />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         )}
       </div>
     </div>
+    </>
   );
 }

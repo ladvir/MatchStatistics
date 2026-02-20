@@ -14,6 +14,7 @@ function rosterToPlayers(team: TeamRoster): Player[] {
     id: `${i}-${p.name}`,
     number: p.number,
     name: p.name,
+    shots: 0,
     goals: 0,
     assists: 0,
     plus: 0,
@@ -28,9 +29,14 @@ export default function App() {
   const [matchLabel, setMatchLabel] = useState("");
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
 
-  const handleRosterLoaded = (team: TeamRoster, matchId?: string) => {
+  const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string) => {
     setPlayers(rosterToPlayers(team));
-    setMatchLabel(matchId ? `Zápas #${matchId}` : "");
+    const label = opponentName
+      ? `${team.teamName} vs ${opponentName}`
+      : matchId
+      ? `Zápas #${matchId}`
+      : "";
+    setMatchLabel(label);
     setView("setup");
   };
 

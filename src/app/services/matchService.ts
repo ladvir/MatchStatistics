@@ -110,6 +110,35 @@ function parseRosterHtml(html: string, matchId: string): MatchRoster {
   return { matchId, home, away };
 }
 
+function extractSideTeamName(matchDiv: Element, sideClass: string): string | undefined {
+  const sideEl = matchDiv.querySelector(`.${sideClass}`);
+  if (!sideEl) return undefined;
+
+  // Try common class-name patterns for team name
+  const selectors = [
+    '.Match-teamName',
+    '[class*="teamName"]',
+    '[class*="TeamName"]',
+    '[class*="team-name"]',
+    '[class*="TeamLabel"]',
+    '[class*="team_name"]',
+  ];
+  for (const sel of selectors) {
+    const text = sideEl.querySelector(sel)?.textContent?.trim();
+    if (text && text.length > 1) return text;
+  }
+
+  // Fall back: first leaf element with 3–60 chars (likely a team name)
+  for (const el of sideEl.querySelectorAll('*')) {
+    if (el.children.length === 0) {
+      const text = el.textContent?.trim();
+      if (text && text.length >= 3 && text.length <= 60) return text;
+    }
+  }
+
+  return undefined;
+}
+
 function parseTeamMatchesHtml(html: string): MatchListItem[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -131,8 +160,8 @@ function parseTeamMatchesHtml(html: string): MatchListItem[] {
 
     const matchId = idMatch[1];
 
-    const homeEl = div.querySelector('.Match-leftContent .Match-teamName');
-    const awayEl = div.querySelector('.Match-rightContent .Match-teamName');
+    const homeTeam = extractSideTeamName(div, 'Match-leftContent');
+    const awayTeam = extractSideTeamName(div, 'Match-rightContent');
 
     const timeEl = div.querySelector('time');
     const dateEl = div.querySelector('.Match-date, .date');
@@ -140,8 +169,8 @@ function parseTeamMatchesHtml(html: string): MatchListItem[] {
 
     matches.push({
       matchId,
-      homeTeam: homeEl?.textContent?.trim() || undefined,
-      awayTeam: awayEl?.textContent?.trim() || undefined,
+      homeTeam: homeTeam || undefined,
+      awayTeam: awayTeam || undefined,
       date: date || undefined,
     });
   });
