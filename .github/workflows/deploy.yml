@@ -22,7 +22,7 @@ jobs:
           missing=0
           for secret in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
             if [ -z "${!secret}" ]; then
-              echo "? Secret $secret is not set!"
+              echo "❌ Secret $secret is not set!"
               missing=1
             fi
           done
@@ -30,7 +30,7 @@ jobs:
             echo "Aborting: One or more required secrets are missing."
             exit 1
           fi
-          echo "? All required secrets are set."
+          echo "✅ All required secrets are set."
         shell: bash
 
   build-frontend:
@@ -55,15 +55,12 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Deploy to FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      # --- CRITICAL FIX: Upload the build result so the next job can see it ---
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          local-dir: ./dist/
-  
+          name: frontend-dist
+          path: dist/
 
   deploy-frontend:
     runs-on: windows-latest
@@ -75,18 +72,21 @@ jobs:
         with:
           name: frontend-dist
           path: ./frontend-dist/
+
       - name: Ensure FTP frontend path ends with slash
         id: fixpath
         run: |
           path="${{ secrets.FTP_FRONTEND_PATH }}"
           if [ -z "$path" ]; then
-            echo "FTP_FRONTEND_PATH_SLASH=" >> $GITHUB_ENV
-          elif [ "${path: -1}" = "/" ]; then
+            # If secret is empty, default to the main directory
+            echo "FTP_FRONTEND_PATH_SLASH=${{ secrets.FTP_SERVER_DIR }}" >> $GITHUB_ENV
+          elif [[ "$path" == */ ]]; then
             echo "FTP_FRONTEND_PATH_SLASH=$path" >> $GITHUB_ENV
           else
             echo "FTP_FRONTEND_PATH_SLASH=$path/" >> $GITHUB_ENV
           fi
         shell: bash
+
       - name: Deploy frontend to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -94,12 +94,13 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./frontend-dist/
-          server-dir: ${{ env.FTP_SERVER_DIR }}
+          server-dir: ${{ env.FTP_FRONTEND_PATH_SLASH }}
           dangerous-clean-slate: true
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
             **/.vscode/**
+
       - name: Deployment completed
-        run: echo "? Deployment completed successfully!"
+        run: echo "✅ Deployment completed successfully!"
