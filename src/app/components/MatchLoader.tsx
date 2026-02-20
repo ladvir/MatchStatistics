@@ -272,7 +272,9 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                         >
                           <div>
                             <div className="font-medium text-sm">{t.teamName}</div>
-                            {t.city && <div className="text-xs text-gray-500">{t.city}</div>}
+                            <div className="text-xs text-gray-500">
+                              {[t.competition, t.city].filter(Boolean).join(" · ")}
+                            </div>
                           </div>
                           {loadingTeam && t.teamName === selectedTeamName ? (
                             <Loader2 className="size-4 animate-spin text-gray-400 shrink-0" />

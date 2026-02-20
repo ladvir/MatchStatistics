@@ -33,6 +33,7 @@ export type FetchMatchListResult =
 export interface TeamSearchResult {
   teamId: string;
   teamName: string;
+  competition?: string;
   city?: string;
 }
 
@@ -260,12 +261,12 @@ function parseTeamSearchHtml(html: string): TeamSearchResult[] {
     const teamName = link.textContent?.trim() ?? '';
     if (!teamName) return;
 
-    // City is in the 6th <td> of the same row (index 5)
     const row = link.closest('tr');
     const cells = row ? Array.from(row.querySelectorAll('td')) : [];
+    const competition = cells[1]?.textContent?.trim() || undefined;
     const city = cells[5]?.textContent?.trim() || undefined;
 
-    results.push({ teamId: idMatch[1], teamName, city });
+    results.push({ teamId: idMatch[1], teamName, competition, city });
   });
 
   return results;
