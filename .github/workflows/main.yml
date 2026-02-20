@@ -62,5 +62,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           local-dir: ./dist/
-  
+          # This forces the action to synchronize everything and delete 
+          # any files on the server not present in your local ./dist/
+          dangerous-clean-slate: true
 
