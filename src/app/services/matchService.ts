@@ -23,7 +23,8 @@ export interface MatchListItem {
   matchId: string;
   homeTeam?: string;
   awayTeam?: string;
-  date?: string;
+  date?: string;    // display string, e.g. "SO, 27. 9. 1. kolo"
+  dateIso?: string; // ISO date string for sorting
 }
 
 export type FetchMatchListResult =
@@ -150,6 +151,25 @@ function extractSideTeamName(matchDiv: Element, sideClass: string): string | und
   return undefined;
 }
 
+// Parses Czech short date "d. m." and infers year from current season (±9 months from today).
+function parseCzechShortDate(text: string): string | undefined {
+  const m = text.match(/(\d{1,2})\.\s*(\d{1,2})\./);
+  if (!m) return undefined;
+  const day = parseInt(m[1]);
+  const month = parseInt(m[2]);
+  if (day < 1 || day > 31 || month < 1 || month > 12) return undefined;
+
+  const now = new Date();
+  const nineMonths = 9 * 30 * 24 * 3600 * 1000;
+  for (const offset of [0, -1, 1]) {
+    const d = new Date(now.getFullYear() + offset, month - 1, day);
+    if (Math.abs(d.getTime() - now.getTime()) <= nineMonths) {
+      return d.toISOString();
+    }
+  }
+  return undefined;
+}
+
 function parseTeamMatchesHtml(html: string): MatchListItem[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -174,15 +194,27 @@ function parseTeamMatchesHtml(html: string): MatchListItem[] {
     const homeTeam = extractSideTeamName(div, 'Match-leftContent');
     const awayTeam = extractSideTeamName(div, 'Match-rightContent');
 
+    // Try <time> element, then .Match-date, then any leaf with "d. m." pattern
     const timeEl = div.querySelector('time');
-    const dateEl = div.querySelector('.Match-date, .date');
-    const date = timeEl?.textContent?.trim() ?? dateEl?.textContent?.trim();
+    let date = timeEl?.textContent?.trim() ?? div.querySelector('.Match-date, .date')?.textContent?.trim();
+    if (!date) {
+      for (const el of div.querySelectorAll('*')) {
+        if (el.children.length === 0) {
+          const text = el.textContent?.trim() ?? '';
+          if (/\d{1,2}\.\s*\d{1,2}\./.test(text)) { date = text; break; }
+        }
+      }
+    }
+    const dateIso = timeEl?.getAttribute('datetime')
+      ? new Date(timeEl.getAttribute('datetime')!).toISOString()
+      : parseCzechShortDate(date ?? '');
 
     matches.push({
       matchId,
       homeTeam: homeTeam || undefined,
       awayTeam: awayTeam || undefined,
       date: date || undefined,
+      dateIso: dateIso || undefined,
     });
   });
 

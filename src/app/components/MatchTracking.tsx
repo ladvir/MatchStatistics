@@ -7,10 +7,17 @@ import { ChevronLeft, RotateCcw } from "lucide-react";
 interface MatchTrackingProps {
   initialPlayers: Player[];
   matchLabel?: string;
+  matchDate?: string;
   onFinish: (players: Player[], ourScore: number, opponentScore: number) => void;
 }
 
-export function MatchTracking({ initialPlayers, matchLabel, onFinish }: MatchTrackingProps) {
+function formatMatchDate(isoDate: string): string {
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("cs-CZ", { weekday: "short", day: "numeric", month: "numeric", year: "numeric" });
+}
+
+export function MatchTracking({ initialPlayers, matchLabel, matchDate, onFinish }: MatchTrackingProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [ourScore, setOurScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -60,6 +67,7 @@ export function MatchTracking({ initialPlayers, matchLabel, onFinish }: MatchTra
           <div>
             <h1 className="text-xl font-semibold">Průběh utkání</h1>
             {matchLabel && <p className="text-sm text-gray-500">{matchLabel}</p>}
+            {matchDate && <p className="text-xs text-gray-400">{formatMatchDate(matchDate)}</p>}
           </div>
           <Button
             variant="ghost"

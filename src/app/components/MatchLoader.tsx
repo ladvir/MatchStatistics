@@ -19,7 +19,7 @@ import { getMatches } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
-  onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string) => void;
+  onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string, matchDate?: string) => void;
   onManualEntry: (initialPlayers?: Player[]) => void;
   onShowStats: () => void;
 }
@@ -99,6 +99,22 @@ function MatchListRow({
   );
 }
 
+function sortMatchList(matches: MatchListItem[]): MatchListItem[] {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const withDate = matches.filter((m) => m.dateIso);
+  const withoutDate = matches.filter((m) => !m.dateIso);
+
+  const upcoming = withDate.filter((m) => new Date(m.dateIso!) >= now);
+  const past = withDate.filter((m) => new Date(m.dateIso!) < now);
+
+  upcoming.sort((a, b) => new Date(a.dateIso!).getTime() - new Date(b.dateIso!).getTime());
+  past.sort((a, b) => new Date(b.dateIso!).getTime() - new Date(a.dateIso!).getTime());
+
+  return [...upcoming, ...past, ...withoutDate];
+}
+
 export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: MatchLoaderProps) {
   const lastPlayers = getMatches()[0]?.players?.map((p) => ({
     ...p,
@@ -124,6 +140,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
   const [matchList, setMatchList] = useState<MatchListItem[] | null>(null);
 
   // Roster loading state
+  const [pendingMatchDate, setPendingMatchDate] = useState<string | undefined>(undefined);
   const [loadingMatchId, setLoadingMatchId] = useState<string | null>(null);
   const [loadingDirect, setLoadingDirect] = useState(false);
   const [rosterError, setRosterError] = useState<string | null>(null);
@@ -170,7 +187,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     setLoadingTeam(false);
 
     if (result.ok) {
-      setMatchList(result.data);
+      setMatchList(sortMatchList(result.data));
       setView("matches");
     } else {
       setTeamError(result.error);
@@ -181,6 +198,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     if (loadingMatchId) return;
     setLoadingMatchId(matchId);
     setRosterError(null);
+    setPendingMatchDate(matchList?.find((m) => m.matchId === matchId)?.dateIso);
 
     const result = await fetchMatchRoster(matchId);
     setLoadingMatchId(null);
@@ -213,7 +231,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     if (!roster) return;
     const team = selectedTeam === "home" ? roster.home : roster.away;
     const opponent = selectedTeam === "home" ? roster.away : roster.home;
-    onRosterLoaded(team, roster.matchId, opponent.teamName);
+    onRosterLoaded(team, roster.matchId, opponent.teamName, pendingMatchDate);
   };
 
   const selectedName = roster

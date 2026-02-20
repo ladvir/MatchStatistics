@@ -27,9 +27,10 @@ export default function App() {
   const [view, setView] = useState<AppView>("loader");
   const [players, setPlayers] = useState<Player[]>([]);
   const [matchLabel, setMatchLabel] = useState("");
+  const [matchDate, setMatchDate] = useState("");
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
 
-  const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string) => {
+  const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string) => {
     setPlayers(rosterToPlayers(team));
     const label = opponentName
       ? `${team.teamName} vs ${opponentName}`
@@ -37,6 +38,7 @@ export default function App() {
       ? `Zápas #${matchId}`
       : "";
     setMatchLabel(label);
+    setMatchDate(date ?? "");
     setView("setup");
   };
 
@@ -90,7 +92,7 @@ export default function App() {
         />
       )}
       {view === "tracking" && (
-        <MatchTracking initialPlayers={players} matchLabel={matchLabel} onFinish={handleFinishMatch} />
+        <MatchTracking initialPlayers={players} matchLabel={matchLabel} matchDate={matchDate} onFinish={handleFinishMatch} />
       )}
       {view === "stats" && (
         <StatsOverview onNewMatch={() => setView("loader")} />
