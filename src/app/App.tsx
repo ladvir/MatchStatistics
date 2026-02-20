@@ -90,7 +90,7 @@ export default function App() {
         />
       )}
       {view === "tracking" && (
-        <MatchTracking initialPlayers={players} onFinish={handleFinishMatch} />
+        <MatchTracking initialPlayers={players} matchLabel={matchLabel} onFinish={handleFinishMatch} />
       )}
       {view === "stats" && (
         <StatsOverview onNewMatch={() => setView("loader")} />
