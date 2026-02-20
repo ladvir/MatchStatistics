@@ -1,14 +1,42 @@
-name: Build & Deploy
+name: Deploy to Production (FTP)
 
 on:
   push:
     branches:
+      - master
       - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  check-secrets:
+    runs-on: windows-latest
+    environment: Production
+    steps:
+      - name: Check required secrets
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          missing=0
+          for secret in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
+            if [ -z "${!secret}" ]; then
+              echo "? Secret $secret is not set!"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "Aborting: One or more required secrets are missing."
+            exit 1
+          fi
+          echo "? All required secrets are set."
+        shell: bash
 
+  build-frontend:
+    runs-on: windows-latest
+    needs: check-secrets
+    environment: Production
     steps:
       - uses: actions/checkout@v4
 
@@ -35,3 +63,43 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           local-dir: ./dist/
+  
+
+  deploy-frontend:
+    runs-on: windows-latest
+    needs: build-frontend
+    environment: Production
+    steps:
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: frontend-dist
+          path: ./frontend-dist/
+      - name: Ensure FTP frontend path ends with slash
+        id: fixpath
+        run: |
+          path="${{ secrets.FTP_FRONTEND_PATH }}"
+          if [ -z "$path" ]; then
+            echo "FTP_FRONTEND_PATH_SLASH=" >> $GITHUB_ENV
+          elif [ "${path: -1}" = "/" ]; then
+            echo "FTP_FRONTEND_PATH_SLASH=$path" >> $GITHUB_ENV
+          else
+            echo "FTP_FRONTEND_PATH_SLASH=$path/" >> $GITHUB_ENV
+          fi
+        shell: bash
+      - name: Deploy frontend to FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./frontend-dist/
+          server-dir: ${{ env.FTP_SERVER_DIR }}
+          dangerous-clean-slate: true
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.vscode/**
+      - name: Deployment completed
+        run: echo "? Deployment completed successfully!"
