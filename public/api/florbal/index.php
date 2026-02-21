@@ -1,5 +1,5 @@
 <?php
-$uri = $_SERVER['REQUEST_URI'];
+$uri = $_SERVER['REDIRECT_URL'] ?? $_SERVER['REQUEST_URI'];
 $suffix = preg_replace('#^/api/florbal#', '', $uri);
 $url = 'https://www.ceskyflorbal.cz' . $suffix;
 
