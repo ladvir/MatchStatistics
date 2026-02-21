@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# Route /api/florbal/* to the PHP proxy
+RewriteCond %{REQUEST_URI} ^/api/florbal
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ /api/florbal/index.php [L]
