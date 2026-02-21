@@ -1,2 +1,2 @@
 RewriteEngine On
-RewriteRule ^api/florbal/(.*)$ https://www.ceskyflorbal.cz/$1 [P,QSA,L]
+RewriteRule ^api/florbal/ florbal-proxy.php [L,QSA]
