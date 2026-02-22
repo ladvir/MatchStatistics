@@ -245,6 +245,10 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
           <Button onClick={onNewMatch}>Nový zápas</Button>
         </div>
 
+        <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">
+          Zobrazte statistiky jednotlivých zápasů nebo souhrnné výsledky za celou sezónu. Klepnutím na ikonu sdílení vytvoříte obrázek.
+        </p>
+
         {matches.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-sm text-gray-500">

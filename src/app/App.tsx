@@ -4,10 +4,11 @@ import { PlayerSetup } from "./components/PlayerSetup";
 import { MatchTracking } from "./components/MatchTracking";
 import { MatchLoader } from "./components/MatchLoader";
 import { StatsOverview } from "./components/StatsOverview";
+import { LandingPage } from "./components/LandingPage";
 import { TeamRoster } from "./services/matchService";
 import { CompletedMatch, saveMatch } from "./services/storageService";
 
-type AppView = "loader" | "setup" | "tracking" | "stats";
+type AppView = "landing" | "loader" | "setup" | "tracking" | "stats";
 
 function rosterToPlayers(team: TeamRoster): Player[] {
   return team.players.map((p, i) => ({
@@ -24,7 +25,7 @@ function rosterToPlayers(team: TeamRoster): Player[] {
 }
 
 export default function App() {
-  const [view, setView] = useState<AppView>("loader");
+  const [view, setView] = useState<AppView>("landing");
   const [players, setPlayers] = useState<Player[]>([]);
   const [matchLabel, setMatchLabel] = useState("");
   const [matchDate, setMatchDate] = useState("");
@@ -77,6 +78,12 @@ export default function App() {
 
   return (
     <div className="size-full">
+      {view === "landing" && (
+        <LandingPage
+          onStart={() => setView("loader")}
+          onShowStats={() => setView("stats")}
+        />
+      )}
       {view === "loader" && (
         <MatchLoader
           onRosterLoaded={handleRosterLoaded}

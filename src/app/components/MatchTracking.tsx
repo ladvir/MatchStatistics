@@ -124,6 +124,9 @@ export function MatchTracking({ initialPlayers, matchLabel, matchDate, onFinish 
         {/* Soupiska */}
         <Card>
           <CardHeader>
+            <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">
+              S = střela · G = gól · A = asistence · + a − = plusminus. Každé klepnutí připočte 1.
+            </p>
             <div className="flex items-center justify-between">
               <CardTitle>Soupiska</CardTitle>
               <div className="flex items-center gap-1">

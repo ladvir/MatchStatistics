@@ -255,6 +255,9 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
               <CardTitle>Načíst soupisku ze ČFbU</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">
+                Vyhledejte svůj tým podle názvu a vyberte zápas — soupiska se načte automaticky. Nemáte internet nebo chybí soupiska? Zadejte hráče ručně.
+              </p>
               {/* TEAM SEARCH */}
               {view === "team" && (
                 <>
@@ -431,6 +434,9 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
               <CardTitle>Vyberte svůj tým</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">
+                Vyberte záložku s vaším týmem (domácí nebo hosté) a potvrďte klepnutím na tlačítko níže.
+              </p>
               <Button variant="ghost" size="sm" onClick={() => setRoster(null)}>
                 <ArrowLeft className="size-4" />
                 Zpět na výběr zápasu
