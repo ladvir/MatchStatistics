@@ -1,27 +1,32 @@
-import { Download, Users, Activity, BarChart2, ChevronRight } from "lucide-react";
+import { Download, Users, Activity, BarChart2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
 import { getMatches } from "../services/storageService";
 
 const steps = [
   {
     icon: Download,
-    label: "Načíst soupisku",
-    desc: "Ze ČFbU nebo ručně",
+    number: "1",
+    title: "Načíst soupisku",
+    desc: "Vyhledejte tým ze ČFbU nebo zadejte hráče ručně.",
   },
   {
     icon: Users,
-    label: "Připravit sestavu",
-    desc: "Upravit hráče",
+    number: "2",
+    title: "Připravit sestavu",
+    desc: "Upravte seznam hráčů, kteří dnes nastoupí.",
   },
   {
     icon: Activity,
-    label: "Sledovat zápas",
-    desc: "Zaznamenat akce",
+    number: "3",
+    title: "Sledovat zápas",
+    desc: "Zaznamenávejte střely, góly, asistence a plusminus.",
   },
   {
     icon: BarChart2,
-    label: "Výsledky",
-    desc: "Zobrazit a sdílet",
+    number: "4",
+    title: "Výsledky",
+    desc: "Zobrazte statistiky a sdílejte je jako obrázek.",
   },
 ];
 
@@ -34,35 +39,30 @@ export function LandingPage({ onStart, onShowStats }: LandingPageProps) {
   const hasMatches = getMatches().length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-      <div className="max-w-sm w-full space-y-10">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Florbalové statistiky</h1>
-          <p className="text-sm text-gray-500">
-            Sledujte statistiky hráčů v průběhu utkání a sdílejte výsledky.
-          </p>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="max-w-sm w-full space-y-3">
+        <div className="text-center pb-2">
+          <h1 className="text-2xl font-bold tracking-tight">Florbalové statistiky</h1>
         </div>
 
-        <div className="flex items-start justify-between">
-          {steps.map((step, i) => (
-            <div key={i} className="flex items-start">
-              <div className="flex flex-col items-center text-center w-16">
-                <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm">
-                  <step.icon className="size-5 text-gray-600" />
-                </div>
-                <div className="mt-2">
-                  <div className="text-xs font-medium leading-tight">{step.label}</div>
-                  <div className="text-xs text-gray-400 leading-tight mt-0.5">{step.desc}</div>
-                </div>
+        {steps.map((step) => (
+          <Card key={step.number}>
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <step.icon className="size-5 text-gray-600" />
               </div>
-              {i < steps.length - 1 && (
-                <ChevronRight className="size-4 text-gray-300 mt-4 flex-shrink-0" />
-              )}
-            </div>
-          ))}
-        </div>
+              <div className="min-w-0">
+                <div className="font-medium text-sm">
+                  <span className="text-gray-400 mr-1">{step.number}.</span>
+                  {step.title}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">{step.desc}</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
 
-        <div className="space-y-3">
+        <div className="space-y-2 pt-2">
           <Button className="w-full" size="lg" onClick={onStart}>
             Začít nový zápas
           </Button>
