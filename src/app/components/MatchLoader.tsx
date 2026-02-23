@@ -232,18 +232,31 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     setView("team");
   };
 
+  const autoSelectSide = (roster: MatchRoster): "home" | "away" => {
+    if (!selectedTeamName) return "home";
+    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+    const query = norm(selectedTeamName);
+    const home = norm(roster.home.teamName);
+    const away = norm(roster.away.teamName);
+    const homeScore = home.includes(query) || query.includes(home) ? 1 : 0;
+    const awayScore = away.includes(query) || query.includes(away) ? 1 : 0;
+    return awayScore > homeScore ? "away" : "home";
+  };
+
   const handleMatchSelect = async (matchId: string) => {
     if (loadingMatchId) return;
     setLoadingMatchId(matchId);
     setRosterError(null);
-    setPendingMatchDate(matchList?.find((m) => m.matchId === matchId)?.dateIso);
+    const matchDate = matchList?.find((m) => m.matchId === matchId)?.dateIso;
 
     const result = await fetchMatchRoster(matchId);
     setLoadingMatchId(null);
 
     if (result.ok) {
-      setRoster(result.data);
-      setSelectedTeam("home");
+      const side = autoSelectSide(result.data);
+      const myTeam = side === "home" ? result.data.home : result.data.away;
+      const opponent = side === "home" ? result.data.away : result.data.home;
+      onRosterLoaded(myTeam, result.data.matchId, opponent.teamName, matchDate, selectedCompetition);
     } else {
       setRosterError(result.error);
     }
