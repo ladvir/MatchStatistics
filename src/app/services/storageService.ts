@@ -61,3 +61,7 @@ export function deleteMatch(id: string): void {
   const matches = getMatches().filter((m) => m.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
 }
+
+export function deleteAllMatches(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}

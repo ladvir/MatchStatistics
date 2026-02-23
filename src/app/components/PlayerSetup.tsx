@@ -180,6 +180,8 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
                           {/* Formation buttons — hidden for GK-position players */}
                           {!isGkByPosition && lines.map((line) => {
                             const isActive = player.role !== "goalkeeper" && player.lineId === line.id;
+                            const lineCount = players.filter((p) => p.lineId === line.id).length;
+                            const isFull = lineCount >= 5 && !isActive;
                             const colors = LINE_COLOR_MAP[line.color];
                             return (
                               <Button
@@ -188,6 +190,8 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
                                 size="sm"
                                 className={`h-7 px-2 text-xs ${isActive ? colors.activeBtn : ""}`}
                                 onClick={() => assignLine(player.id, line.id)}
+                                disabled={isFull}
+                                title={isFull ? `${line.name} je plná (5/5)` : undefined}
                               >
                                 {line.name.replace("Formace ", "F")}
                               </Button>
@@ -204,11 +208,14 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
 
                 <div className="text-xs text-gray-400 flex flex-wrap gap-x-3 gap-y-1 pt-1">
                   <span>BG: {goalkeeperCount}</span>
-                  {lines.map((line) => (
-                    <span key={line.id} className={LINE_COLOR_MAP[line.color].header}>
-                      {line.name}: {players.filter((p) => p.lineId === line.id).length}
-                    </span>
-                  ))}
+                  {lines.map((line) => {
+                    const count = players.filter((p) => p.lineId === line.id).length;
+                    return (
+                      <span key={line.id} className={`${LINE_COLOR_MAP[line.color].header} ${count >= 5 ? "font-semibold" : ""}`}>
+                        {line.name}: {count}/5
+                      </span>
+                    );
+                  })}
                   <span>Náhradníci: {substituteCount}</span>
                 </div>
 

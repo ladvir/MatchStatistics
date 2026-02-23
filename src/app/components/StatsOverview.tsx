@@ -4,7 +4,7 @@ import { toPng } from "html-to-image";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { CompletedMatch, getMatches, deleteMatch } from "../services/storageService";
+import { CompletedMatch, getMatches, deleteMatch, deleteAllMatches } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
 interface StatsOverviewProps {
@@ -183,9 +183,21 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
   );
   const [sharingMatch, setSharingMatch] = useState(false);
   const [sharingAll, setSharingAll] = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const matchCardRef = useRef<HTMLDivElement>(null);
   const allCardRef = useRef<HTMLDivElement>(null);
+
+  const handleDeleteAll = () => {
+    if (!confirmDeleteAll) {
+      setConfirmDeleteAll(true);
+      return;
+    }
+    deleteAllMatches();
+    setMatches([]);
+    setSelectedMatchId(null);
+    setConfirmDeleteAll(false);
+  };
 
   const handleDelete = (id: string) => {
     deleteMatch(id);
@@ -246,7 +258,21 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
             </Button>
             <h1 className="text-xl font-semibold">Přehled statistik</h1>
           </div>
-          <Button onClick={onNewMatch}>Nový zápas</Button>
+          <div className="flex items-center gap-2">
+            {matches.length > 0 && (
+              <Button
+                variant={confirmDeleteAll ? "destructive" : "ghost"}
+                size="sm"
+                className={confirmDeleteAll ? "" : "text-gray-400"}
+                onClick={handleDeleteAll}
+                onBlur={() => setConfirmDeleteAll(false)}
+              >
+                <Trash2 className="size-4 mr-1" />
+                {confirmDeleteAll ? "Opravdu smazat?" : "Smazat vše"}
+              </Button>
+            )}
+            <Button onClick={onNewMatch}>Nový zápas</Button>
+          </div>
         </div>
 
         <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">
