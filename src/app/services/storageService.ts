@@ -6,6 +6,7 @@ const SAVED_TEAM_KEY = 'match-statistics-team';
 export interface SavedTeam {
   teamId: string;
   teamName: string;
+  competition?: string;
 }
 
 export function getSavedTeam(): SavedTeam | null {
@@ -31,6 +32,7 @@ export interface CompletedMatch {
   date: string; // ISO string
   label: string; // e.g. "Zápas #1227627"
   teamName?: string; // our team name, e.g. "FBC Florbal Praha"
+  competition?: string; // e.g. "U18 - krajský přebor"
   ourScore: number;
   opponentScore: number;
   players: Player[];

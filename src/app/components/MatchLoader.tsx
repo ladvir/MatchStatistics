@@ -19,7 +19,7 @@ import { getMatches, getSavedTeam, saveTeam, clearSavedTeam } from "../services/
 import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
-  onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string, matchDate?: string) => void;
+  onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string, matchDate?: string, competition?: string) => void;
   onManualEntry: (initialPlayers?: Player[]) => void;
   onShowStats: () => void;
 }
@@ -135,6 +135,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
 
   // Team match list state
   const [selectedTeamName, setSelectedTeamName] = useState("");
+  const [selectedCompetition, setSelectedCompetition] = useState<string | undefined>(undefined);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
   const [matchList, setMatchList] = useState<MatchListItem[] | null>(null);
@@ -183,6 +184,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     if (saved) {
       setLoadingTeam(true);
       setSelectedTeamName(saved.teamName);
+      setSelectedCompetition(saved.competition);
       fetchTeamMatches(saved.teamId).then((result) => {
         setLoadingTeam(false);
         if (result.ok) {
@@ -196,12 +198,13 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleTeamSelect = async (teamId: string, teamName: string) => {
+  const handleTeamSelect = async (teamId: string, teamName: string, competition?: string) => {
     if (loadingTeam) return;
     setLoadingTeam(true);
     setTeamError(null);
     setSelectedTeamName(teamName);
-    saveTeam({ teamId, teamName });
+    setSelectedCompetition(competition);
+    saveTeam({ teamId, teamName, competition });
 
     const result = await fetchTeamMatches(teamId);
     setLoadingTeam(false);
@@ -217,6 +220,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
   const handleChangeTeam = () => {
     clearSavedTeam();
     setMatchList(null);
+    setSelectedCompetition(undefined);
     setRosterError(null);
     setTeamError(null);
     setView("team");
@@ -259,7 +263,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     if (!roster) return;
     const team = selectedTeam === "home" ? roster.home : roster.away;
     const opponent = selectedTeam === "home" ? roster.away : roster.home;
-    onRosterLoaded(team, roster.matchId, opponent.teamName, pendingMatchDate);
+    onRosterLoaded(team, roster.matchId, opponent.teamName, pendingMatchDate, selectedCompetition);
   };
 
   const selectedName = roster
@@ -323,7 +327,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                       {searchResults.map((t) => (
                         <button
                           key={t.teamId}
-                          onClick={() => handleTeamSelect(t.teamId, t.teamName)}
+                          onClick={() => handleTeamSelect(t.teamId, t.teamName, t.competition)}
                           disabled={loadingTeam}
                           className="w-full flex items-center justify-between p-3 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 text-left transition-colors"
                         >
@@ -362,7 +366,9 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate">{selectedTeamName}</div>
-                      <div className="text-xs text-gray-500">{matchList.length} zápasů</div>
+                      <div className="text-xs text-gray-500">
+                        {[selectedCompetition, `${matchList.length} zápasů`].filter(Boolean).join(" · ")}
+                      </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={handleChangeTeam} className="shrink-0 text-gray-500">
                       Změnit tým

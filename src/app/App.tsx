@@ -35,9 +35,10 @@ export default function App() {
   const [matchLabel, setMatchLabel] = useState("");
   const [matchDate, setMatchDate] = useState("");
   const [myTeamName, setMyTeamName] = useState("");
+  const [myCompetition, setMyCompetition] = useState<string | undefined>(undefined);
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
 
-  const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string) => {
+  const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string, competition?: string) => {
     setPlayers(rosterToPlayers(team));
     setLines(DEFAULT_LINES);
     const label = opponentName
@@ -48,6 +49,7 @@ export default function App() {
     setMatchLabel(label);
     setMatchDate(date ?? "");
     setMyTeamName(team.teamName);
+    setMyCompetition(competition);
     setView("setup");
   };
 
@@ -56,6 +58,7 @@ export default function App() {
     setLines(DEFAULT_LINES);
     setMatchLabel("");
     setMyTeamName("");
+    setMyCompetition(undefined);
     setView("setup");
   };
 
@@ -76,6 +79,7 @@ export default function App() {
       date: new Date().toISOString(),
       label: matchLabel || new Date().toLocaleDateString("cs-CZ"),
       teamName: myTeamName || undefined,
+      competition: myCompetition,
       ourScore,
       opponentScore,
       players: finalPlayers,

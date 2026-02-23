@@ -230,18 +230,25 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
     }
   };
 
-  const teamNames = Array.from(
-    new Set(matches.map((m) => m.teamName).filter(Boolean) as string[])
+  // Composite key: "teamName|||competition" (or just teamName if no competition)
+  function teamKey(m: { teamName?: string; competition?: string }): string | null {
+    if (!m.teamName) return null;
+    return m.competition ? `${m.teamName}|||${m.competition}` : m.teamName;
+  }
+  function teamLabel(key: string): string {
+    const [name, comp] = key.split("|||");
+    return comp ? `${name} · ${comp}` : name;
+  }
+
+  const teamKeys = Array.from(
+    new Set(matches.map(teamKey).filter(Boolean) as string[])
   );
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string | null>(
-    () => {
-      const saved = matches.map((m) => m.teamName).find(Boolean);
-      return saved ?? null;
-    }
+    () => matches.map(teamKey).find(Boolean) ?? null
   );
 
   const filteredMatches = selectedTeamFilter
-    ? matches.filter((m) => m.teamName === selectedTeamFilter)
+    ? matches.filter((m) => teamKey(m) === selectedTeamFilter)
     : matches;
 
   const selectedMatch = matches.find((m) => m.id === selectedMatchId) ?? null;
@@ -316,7 +323,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                       <div>
                         <div className="font-medium text-sm">{m.label}</div>
                         <div className="text-xs text-gray-500">
-                          {[formatDate(m.date), `${m.ourScore}:${m.opponentScore}`, teamNames.length > 1 ? m.teamName : undefined].filter(Boolean).join(" · ")}
+                          {[formatDate(m.date), `${m.ourScore}:${m.opponentScore}`, teamKeys.length > 1 ? (m.competition ? `${m.teamName} · ${m.competition}` : m.teamName) : undefined].filter(Boolean).join(" · ")}
                         </div>
                       </div>
                       <button
@@ -365,17 +372,17 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
 
             {/* CELKEM */}
             <TabsContent value="all">
-              {teamNames.length > 1 && (
+              {teamKeys.length > 1 && (
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {teamNames.map((name) => (
+                  {teamKeys.map((key) => (
                     <Button
-                      key={name}
+                      key={key}
                       size="sm"
-                      variant={selectedTeamFilter === name ? "secondary" : "outline"}
+                      variant={selectedTeamFilter === key ? "secondary" : "outline"}
                       className="text-xs h-7"
-                      onClick={() => setSelectedTeamFilter(name)}
+                      onClick={() => setSelectedTeamFilter(key)}
                     >
-                      {name}
+                      {teamLabel(key)}
                     </Button>
                   ))}
                 </div>
@@ -384,7 +391,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle>
-                      {selectedTeamFilter ?? "Celkem"} — {filteredMatches.length} {pluralZapas(filteredMatches.length)}
+                      {selectedTeamFilter ? teamLabel(selectedTeamFilter) : "Celkem"} — {filteredMatches.length} {pluralZapas(filteredMatches.length)}
                     </CardTitle>
                     <Button
                       variant="ghost"
