@@ -1,6 +1,30 @@
 import type { Player } from '../components/PlayerSetup';
 
 const STORAGE_KEY = 'match-statistics-history';
+const SAVED_TEAM_KEY = 'match-statistics-team';
+
+export interface SavedTeam {
+  teamId: string;
+  teamName: string;
+}
+
+export function getSavedTeam(): SavedTeam | null {
+  try {
+    const raw = localStorage.getItem(SAVED_TEAM_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedTeam;
+  } catch {
+    return null;
+  }
+}
+
+export function saveTeam(team: SavedTeam): void {
+  localStorage.setItem(SAVED_TEAM_KEY, JSON.stringify(team));
+}
+
+export function clearSavedTeam(): void {
+  localStorage.removeItem(SAVED_TEAM_KEY);
+}
 
 export interface CompletedMatch {
   id: string;

@@ -15,7 +15,7 @@ import {
   TeamRoster,
   TeamSearchResult,
 } from "../services/matchService";
-import { getMatches } from "../services/storageService";
+import { getMatches, getSavedTeam, saveTeam, clearSavedTeam } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
@@ -177,11 +177,31 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     };
   }, [searchQuery]);
 
+  // Auto-load saved team on mount
+  useEffect(() => {
+    const saved = getSavedTeam();
+    if (saved) {
+      setLoadingTeam(true);
+      setSelectedTeamName(saved.teamName);
+      fetchTeamMatches(saved.teamId).then((result) => {
+        setLoadingTeam(false);
+        if (result.ok) {
+          setMatchList(sortMatchList(result.data));
+          setView("matches");
+        } else {
+          setTeamError(result.error);
+        }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleTeamSelect = async (teamId: string, teamName: string) => {
     if (loadingTeam) return;
     setLoadingTeam(true);
     setTeamError(null);
     setSelectedTeamName(teamName);
+    saveTeam({ teamId, teamName });
 
     const result = await fetchTeamMatches(teamId);
     setLoadingTeam(false);
@@ -192,6 +212,14 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
     } else {
       setTeamError(result.error);
     }
+  };
+
+  const handleChangeTeam = () => {
+    clearSavedTeam();
+    setMatchList(null);
+    setRosterError(null);
+    setTeamError(null);
+    setView("team");
   };
 
   const handleMatchSelect = async (matchId: string) => {
@@ -258,8 +286,16 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
               <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">
                 Vyhledejte svůj tým podle názvu a vyberte zápas — soupiska se načte automaticky. Nemáte internet nebo chybí soupiska? Zadejte hráče ručně.
               </p>
+              {/* loading saved team */}
+              {view === "team" && loadingTeam && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  Načítám zápasy…
+                </div>
+              )}
+
               {/* TEAM SEARCH */}
-              {view === "team" && (
+              {view === "team" && !loadingTeam && (
                 <>
                   <div className="space-y-1">
                     <div className="relative">
@@ -323,15 +359,14 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
               {/* MATCH LIST */}
               {view === "matches" && matchList && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={goBack}>
-                      <ArrowLeft className="size-4" />
-                      Zpět
-                    </Button>
+                  <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate">{selectedTeamName}</div>
                       <div className="text-xs text-gray-500">{matchList.length} zápasů</div>
                     </div>
+                    <Button variant="ghost" size="sm" onClick={handleChangeTeam} className="shrink-0 text-gray-500">
+                      Změnit tým
+                    </Button>
                   </div>
 
                   <div className="max-h-96 overflow-y-auto space-y-1">
