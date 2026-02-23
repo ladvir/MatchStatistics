@@ -252,7 +252,7 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
         {!roster && (
           <Card>
             <CardHeader>
-              <CardTitle>Načíst soupisku ze ČFbU</CardTitle>
+              <CardTitle>Načíst soupisku z Českého florbalu (FIS)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-500 bg-gray-100 rounded-md px-3 py-2 leading-relaxed">

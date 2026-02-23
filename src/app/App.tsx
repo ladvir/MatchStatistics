@@ -7,6 +7,7 @@ import { StatsOverview } from "./components/StatsOverview";
 import { LandingPage } from "./components/LandingPage";
 import { TeamRoster } from "./services/matchService";
 import { CompletedMatch, saveMatch } from "./services/storageService";
+import { Line, DEFAULT_LINES } from "./types";
 
 type AppView = "landing" | "loader" | "setup" | "tracking" | "stats";
 
@@ -27,12 +28,14 @@ function rosterToPlayers(team: TeamRoster): Player[] {
 export default function App() {
   const [view, setView] = useState<AppView>("landing");
   const [players, setPlayers] = useState<Player[]>([]);
+  const [lines, setLines] = useState<Line[]>(DEFAULT_LINES);
   const [matchLabel, setMatchLabel] = useState("");
   const [matchDate, setMatchDate] = useState("");
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
 
   const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string) => {
     setPlayers(rosterToPlayers(team));
+    setLines(DEFAULT_LINES);
     const label = opponentName
       ? `${team.teamName} vs ${opponentName}`
       : matchId
@@ -45,12 +48,14 @@ export default function App() {
 
   const handleManualEntry = (initialPlayers?: Player[]) => {
     setPlayers(initialPlayers ?? []);
+    setLines(DEFAULT_LINES);
     setMatchLabel("");
     setView("setup");
   };
 
-  const handleStartMatch = (p: Player[]) => {
+  const handleStartMatch = (p: Player[], updatedLines: Line[]) => {
     setPlayers(p);
+    setLines(updatedLines);
     setCurrentMatchStorageId(Date.now().toString());
     setView("tracking");
   };
@@ -94,12 +99,19 @@ export default function App() {
       {view === "setup" && (
         <PlayerSetup
           initialPlayers={players}
+          lines={lines}
           onStartMatch={handleStartMatch}
           onBack={handleBackFromSetup}
         />
       )}
       {view === "tracking" && (
-        <MatchTracking initialPlayers={players} matchLabel={matchLabel} matchDate={matchDate} onFinish={handleFinishMatch} />
+        <MatchTracking
+          initialPlayers={players}
+          lines={lines}
+          matchLabel={matchLabel}
+          matchDate={matchDate}
+          onFinish={handleFinishMatch}
+        />
       )}
       {view === "stats" && (
         <StatsOverview onNewMatch={() => setView("loader")} />

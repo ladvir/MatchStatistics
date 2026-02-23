@@ -4,6 +4,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ArrowLeft, Plus, X } from "lucide-react";
+import { Line } from "../types";
 
 export interface Player {
   id: string;
@@ -15,16 +16,20 @@ export interface Player {
   plus: number;
   minus: number;
   plusMinus: number;
+  role?: "goalkeeper" | "field";
+  lineId?: string | null;
 }
 
 interface PlayerSetupProps {
-  onStartMatch: (players: Player[]) => void;
+  onStartMatch: (players: Player[], lines: Line[]) => void;
   initialPlayers?: Player[];
+  lines: Line[];
   onBack?: () => void;
 }
 
-export function PlayerSetup({ onStartMatch, initialPlayers, onBack }: PlayerSetupProps) {
+export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines, onBack }: PlayerSetupProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers ?? []);
+  const [lines, setLines] = useState<Line[]>(initialLines);
   const [number, setNumber] = useState("");
   const [name, setName] = useState("");
 
@@ -50,6 +55,33 @@ export function PlayerSetup({ onStartMatch, initialPlayers, onBack }: PlayerSetu
   const removePlayer = (id: string) => {
     setPlayers(players.filter((p) => p.id !== id));
   };
+
+  const assignGoalkeeper = (playerId: string) => {
+    setPlayers(players.map((p) => {
+      if (p.id !== playerId) return p;
+      return p.role === "goalkeeper"
+        ? { ...p, role: "field", lineId: null }
+        : { ...p, role: "goalkeeper", lineId: null };
+    }));
+  };
+
+  const assignLine = (playerId: string, lineId: string) => {
+    setPlayers(players.map((p) => {
+      if (p.id !== playerId) return p;
+      return p.role !== "goalkeeper" && p.lineId === lineId
+        ? { ...p, role: "field", lineId: null }
+        : { ...p, role: "field", lineId };
+    }));
+  };
+
+  const addLine = () => {
+    if (lines.length >= 4) return;
+    const n = lines.length + 1;
+    setLines([...lines, { id: `line-${n}`, name: `Formace ${n}` }]);
+  };
+
+  const goalkeeperCount = players.filter((p) => p.role === "goalkeeper").length;
+  const substituteCount = players.filter((p) => p.role !== "goalkeeper" && !p.lineId).length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -105,11 +137,30 @@ export function PlayerSetup({ onStartMatch, initialPlayers, onBack }: PlayerSetu
                   {players.map((player) => (
                     <div
                       key={player.id}
-                      className="flex items-center justify-between p-2 bg-white border rounded"
+                      className="flex items-center gap-2 p-2 bg-white border rounded"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono w-8">{player.number}</span>
-                        <span>{player.name}</span>
+                      <span className="font-mono text-sm w-7 shrink-0">{player.number}</span>
+                      <span className="text-sm truncate flex-1">{player.name}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant={player.role === "goalkeeper" ? "secondary" : "outline"}
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => assignGoalkeeper(player.id)}
+                        >
+                          BG
+                        </Button>
+                        {lines.map((line) => (
+                          <Button
+                            key={line.id}
+                            variant={player.role !== "goalkeeper" && player.lineId === line.id ? "secondary" : "outline"}
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => assignLine(player.id, line.id)}
+                          >
+                            {line.name.replace("Formace ", "F")}
+                          </Button>
+                        ))}
                       </div>
                       <Button
                         variant="ghost"
@@ -121,11 +172,32 @@ export function PlayerSetup({ onStartMatch, initialPlayers, onBack }: PlayerSetu
                     </div>
                   ))}
                 </div>
+
+                <div className="text-xs text-gray-400 space-y-0.5 pt-1">
+                  <span>BG: {goalkeeperCount}</span>
+                  {lines.map((line) => (
+                    <span key={line.id} className="ml-3">
+                      {line.name}: {players.filter((p) => p.lineId === line.id).length}
+                    </span>
+                  ))}
+                  <span className="ml-3">Náhradníci: {substituteCount}</span>
+                </div>
+
+                {lines.length < 4 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-gray-500 px-0"
+                    onClick={addLine}
+                  >
+                    + Přidat formaci
+                  </Button>
+                )}
               </div>
             )}
 
             <Button
-              onClick={() => onStartMatch(players)}
+              onClick={() => onStartMatch(players, lines)}
               disabled={players.length === 0}
               className="w-full"
             >

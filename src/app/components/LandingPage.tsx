@@ -8,7 +8,7 @@ const steps = [
     icon: Download,
     number: "1",
     title: "Načíst soupisku",
-    desc: "Vyhledejte tým ze ČFbU nebo zadejte hráče ručně.",
+    desc: "Vyhledejte tým z Českého florbalu (FIS) nebo zadejte hráče ručně.",
   },
   {
     icon: Users,
@@ -26,7 +26,7 @@ const steps = [
     icon: BarChart2,
     number: "4",
     title: "Výsledky",
-    desc: "Zobrazte statistiky a sdílejte je jako obrázek.",
+    desc: "Zobrazte statistiky a sdílejte je",
   },
 ];
 
