@@ -34,6 +34,7 @@ export default function App() {
   const [lines, setLines] = useState<Line[]>(DEFAULT_LINES);
   const [matchLabel, setMatchLabel] = useState("");
   const [matchDate, setMatchDate] = useState("");
+  const [myTeamName, setMyTeamName] = useState("");
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
 
   const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string) => {
@@ -46,6 +47,7 @@ export default function App() {
       : "";
     setMatchLabel(label);
     setMatchDate(date ?? "");
+    setMyTeamName(team.teamName);
     setView("setup");
   };
 
@@ -53,6 +55,7 @@ export default function App() {
     setPlayers(initialPlayers ?? []);
     setLines(DEFAULT_LINES);
     setMatchLabel("");
+    setMyTeamName("");
     setView("setup");
   };
 
@@ -72,6 +75,7 @@ export default function App() {
       id: currentMatchStorageId,
       date: new Date().toISOString(),
       label: matchLabel || new Date().toLocaleDateString("cs-CZ"),
+      teamName: myTeamName || undefined,
       ourScore,
       opponentScore,
       players: finalPlayers,

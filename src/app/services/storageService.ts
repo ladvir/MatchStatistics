@@ -30,6 +30,7 @@ export interface CompletedMatch {
   id: string;
   date: string; // ISO string
   label: string; // e.g. "Zápas #1227627"
+  teamName?: string; // our team name, e.g. "FBC Florbal Praha"
   ourScore: number;
   opponentScore: number;
   players: Player[];

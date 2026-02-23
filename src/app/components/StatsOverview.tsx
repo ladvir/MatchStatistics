@@ -218,8 +218,22 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
     }
   };
 
+  const teamNames = Array.from(
+    new Set(matches.map((m) => m.teamName).filter(Boolean) as string[])
+  );
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState<string | null>(
+    () => {
+      const saved = matches.map((m) => m.teamName).find(Boolean);
+      return saved ?? null;
+    }
+  );
+
+  const filteredMatches = selectedTeamFilter
+    ? matches.filter((m) => m.teamName === selectedTeamFilter)
+    : matches;
+
   const selectedMatch = matches.find((m) => m.id === selectedMatchId) ?? null;
-  const aggregated = aggregatePlayers(matches);
+  const aggregated = aggregatePlayers(filteredMatches);
 
   return (
     <>
@@ -276,7 +290,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                       <div>
                         <div className="font-medium text-sm">{m.label}</div>
                         <div className="text-xs text-gray-500">
-                          {formatDate(m.date)} · {m.ourScore}:{m.opponentScore}
+                          {[formatDate(m.date), `${m.ourScore}:${m.opponentScore}`, teamNames.length > 1 ? m.teamName : undefined].filter(Boolean).join(" · ")}
                         </div>
                       </div>
                       <button
@@ -325,11 +339,26 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
 
             {/* CELKEM */}
             <TabsContent value="all">
+              {teamNames.length > 1 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {teamNames.map((name) => (
+                    <Button
+                      key={name}
+                      size="sm"
+                      variant={selectedTeamFilter === name ? "secondary" : "outline"}
+                      className="text-xs h-7"
+                      onClick={() => setSelectedTeamFilter(name)}
+                    >
+                      {name}
+                    </Button>
+                  ))}
+                </div>
+              )}
               <div ref={allCardRef}>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle>
-                      Celkem — {matches.length} {pluralZapas(matches.length)}
+                      {selectedTeamFilter ?? "Celkem"} — {filteredMatches.length} {pluralZapas(filteredMatches.length)}
                     </CardTitle>
                     <Button
                       variant="ghost"
