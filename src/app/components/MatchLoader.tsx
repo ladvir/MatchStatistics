@@ -88,13 +88,13 @@ function MatchListRow({
       disabled={loading}
       className={`w-full flex items-center justify-between p-3 border rounded disabled:opacity-50 text-left transition-colors ${
         isPast
-          ? "bg-gray-50 hover:bg-gray-100 text-gray-500"
-          : "bg-white hover:bg-gray-50"
+          ? "bg-gray-100 hover:bg-gray-200 border-gray-200"
+          : "bg-white hover:bg-gray-50 border-gray-200"
       }`}
     >
       <div>
-        <div className={`font-medium text-sm ${isPast ? "text-gray-500" : ""}`}>{label}</div>
-        {match.date && <div className="text-xs text-gray-400">{match.date}</div>}
+        <div className={`font-medium text-sm ${isPast ? "text-gray-400" : "text-gray-900"}`}>{label}</div>
+        {match.date && <div className={`text-xs ${isPast ? "text-gray-400" : "text-gray-500"}`}>{match.date}</div>}
       </div>
       {loading ? (
         <Loader2 className="size-4 animate-spin text-gray-400 shrink-0" />
