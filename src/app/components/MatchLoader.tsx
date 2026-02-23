@@ -69,10 +69,12 @@ function RosterError({
 function MatchListRow({
   match,
   loading,
+  isPast,
   onClick,
 }: {
   match: MatchListItem;
   loading: boolean;
+  isPast: boolean;
   onClick: () => void;
 }) {
   const label =
@@ -84,16 +86,20 @@ function MatchListRow({
     <button
       onClick={onClick}
       disabled={loading}
-      className="w-full flex items-center justify-between p-3 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 text-left transition-colors"
+      className={`w-full flex items-center justify-between p-3 border rounded disabled:opacity-50 text-left transition-colors ${
+        isPast
+          ? "bg-gray-50 hover:bg-gray-100 text-gray-500"
+          : "bg-white hover:bg-gray-50"
+      }`}
     >
       <div>
-        <div className="font-medium text-sm">{label}</div>
-        {match.date && <div className="text-xs text-gray-500">{match.date}</div>}
+        <div className={`font-medium text-sm ${isPast ? "text-gray-500" : ""}`}>{label}</div>
+        {match.date && <div className="text-xs text-gray-400">{match.date}</div>}
       </div>
       {loading ? (
         <Loader2 className="size-4 animate-spin text-gray-400 shrink-0" />
       ) : (
-        <ChevronRight className="size-4 text-gray-400 shrink-0" />
+        <ChevronRight className={`size-4 shrink-0 ${isPast ? "text-gray-300" : "text-gray-400"}`} />
       )}
     </button>
   );
@@ -379,14 +385,18 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                   </div>
 
                   <div className="max-h-96 overflow-y-auto space-y-1">
-                    {matchList.map((match) => (
-                      <MatchListRow
-                        key={match.matchId}
-                        match={match}
-                        loading={loadingMatchId === match.matchId}
-                        onClick={() => handleMatchSelect(match.matchId)}
-                      />
-                    ))}
+                    {matchList.map((match) => {
+                      const isPast = !!match.dateIso && new Date(match.dateIso) < new Date();
+                      return (
+                        <MatchListRow
+                          key={match.matchId}
+                          match={match}
+                          loading={loadingMatchId === match.matchId}
+                          isPast={isPast}
+                          onClick={() => handleMatchSelect(match.matchId)}
+                        />
+                      );
+                    })}
                   </div>
 
                   {rosterError && (
