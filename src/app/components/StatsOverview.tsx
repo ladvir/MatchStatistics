@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Loader2, Share2, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, Loader2, Trash2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -311,7 +311,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                         {sharingMatch ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Share2 className="size-4" />
+                          <Download className="size-4" />
                         )}
                       </Button>
                     </CardHeader>
@@ -341,7 +341,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                       {sharingAll ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
-                        <Share2 className="size-4" />
+                        <Download className="size-4" />
                       )}
                     </Button>
                   </CardHeader>
