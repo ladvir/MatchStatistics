@@ -106,14 +106,25 @@ interface GroupSectionProps {
   showReassign: boolean;
   onStat: (id: string, stat: StatKey) => void;
   onReassign: (id: string, lineId: string | null) => void;
+  onGroupStat?: (stat: "plus" | "minus") => void;
 }
 
-function GroupSection({ title, titleClass, players, lines, showReassign, onStat, onReassign }: GroupSectionProps) {
+function GroupSection({ title, titleClass, players, lines, showReassign, onStat, onReassign, onGroupStat }: GroupSectionProps) {
   if (players.length === 0) return null;
   return (
     <div>
-      <div className={`text-xs font-semibold uppercase tracking-wide px-2 pt-3 pb-1 ${titleClass}`}>
-        {title}
+      <div className={`flex items-center justify-between px-2 pt-3 pb-1 ${titleClass}`}>
+        <span className="text-xs font-semibold uppercase tracking-wide">{title}</span>
+        {onGroupStat && (
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="ghost"
+              className="h-6 w-8 p-0 text-green-600 font-semibold text-sm"
+              onClick={() => onGroupStat("plus")}>+</Button>
+            <Button size="sm" variant="ghost"
+              className="h-6 w-8 p-0 text-red-600 font-semibold text-sm"
+              onClick={() => onGroupStat("minus")}>−</Button>
+          </div>
+        )}
       </div>
       {players.map((player) => (
         <PlayerRow
@@ -148,6 +159,15 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
     setPlayers(prev => prev.map((p) =>
       p.id !== playerId ? p : { ...p, role: "field", lineId }
     ));
+  };
+
+  const updateFormationStat = (lineId: string, stat: "plus" | "minus") => {
+    setPlayers(prev => prev.map((p) => {
+      if (p.lineId !== lineId || p.role === "goalkeeper") return p;
+      const updated = { ...p, [stat]: p[stat] + 1 };
+      updated.plusMinus = updated.plus - updated.minus;
+      return updated;
+    }));
   };
 
   const resetStats = () => {
@@ -248,6 +268,7 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
                 showReassign={true}
                 onStat={updatePlayerStat}
                 onReassign={reassignPlayer}
+                onGroupStat={(stat) => updateFormationStat(line.id, stat)}
               />
             ))}
             <GroupSection title="Náhradníci" titleClass="text-gray-400"
