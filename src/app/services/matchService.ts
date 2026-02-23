@@ -166,13 +166,12 @@ function parseCzechShortDate(text: string): string | undefined {
 
   const now = new Date();
   const nineMonths = 9 * 30 * 24 * 3600 * 1000;
-  for (const offset of [0, -1, 1]) {
-    const d = new Date(now.getFullYear() + offset, month - 1, day);
-    if (Math.abs(d.getTime() - now.getTime()) <= nineMonths) {
-      return d.toISOString();
-    }
-  }
-  return undefined;
+  const candidates = [-1, 0, 1]
+    .map(offset => new Date(now.getFullYear() + offset, month - 1, day))
+    .filter(d => Math.abs(d.getTime() - now.getTime()) <= nineMonths);
+  if (candidates.length === 0) return undefined;
+  candidates.sort((a, b) => Math.abs(a.getTime() - now.getTime()) - Math.abs(b.getTime() - now.getTime()));
+  return candidates[0].toISOString();
 }
 
 function parseTeamMatchesHtml(html: string): MatchListItem[] {

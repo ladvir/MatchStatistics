@@ -3,7 +3,7 @@ import { Player } from "./PlayerSetup";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { ChevronLeft, RotateCcw } from "lucide-react";
+import { ChevronLeft, RotateCcw, Undo2 } from "lucide-react";
 import { Line, LINE_COLOR_MAP } from "../types";
 
 interface MatchTrackingProps {
@@ -11,6 +11,8 @@ interface MatchTrackingProps {
   lines: Line[];
   matchLabel?: string;
   matchDate?: string;
+  myTeamName?: string;
+  opponentName?: string;
   initialOurScore?: number;
   initialOpponentScore?: number;
   onFinish: (players: Player[], ourScore: number, opponentScore: number) => void;
@@ -49,15 +51,13 @@ function PlayerRow({ player, lines, showReassign, onStat, onReassign }: PlayerRo
             {POSITION_LABEL[player.position]}
           </span>
         )}
-        <span className="text-sm truncate">{player.name}</span>
-      </div>
-      <div className="flex items-center justify-between sm:justify-end sm:ml-auto gap-1">
+        <span className="text-sm truncate min-w-0 flex-1">{player.name}</span>
         {showReassign && (
           <Select
             value={player.lineId ?? "sub"}
             onValueChange={(val) => onReassign(player.id, val === "sub" ? null : val)}
           >
-            <SelectTrigger className="h-7 w-20 text-xs px-2">
+            <SelectTrigger className="h-7 w-20 text-xs px-2 shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -70,6 +70,8 @@ function PlayerRow({ player, lines, showReassign, onStat, onReassign }: PlayerRo
             </SelectContent>
           </Select>
         )}
+      </div>
+      <div className="flex items-center justify-between sm:justify-end sm:ml-auto gap-1">
         <Button size="sm" variant="outline" onClick={() => onStat(player.id, "shots")}
           className="h-11 flex-1 sm:flex-none sm:w-11 p-0 flex flex-col items-center justify-center">
           <div className="text-sm font-semibold">S</div>
@@ -142,13 +144,23 @@ function GroupSection({ title, titleClass, players, lines, showReassign, onStat,
   );
 }
 
-export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, initialOurScore = 0, initialOpponentScore = 0, onFinish }: MatchTrackingProps) {
+export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, myTeamName, opponentName, initialOurScore = 0, initialOpponentScore = 0, onFinish }: MatchTrackingProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
+  const [history, setHistory] = useState<Player[][]>([]);
   const [ourScore, setOurScore] = useState(initialOurScore);
   const [opponentScore, setOpponentScore] = useState(initialOpponentScore);
   const [sortBy, setSortBy] = useState<"formation" | "number" | "name">("formation");
 
+  const undo = () => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      setPlayers(prev[prev.length - 1]);
+      return prev.slice(0, -1);
+    });
+  };
+
   const updatePlayerStat = (playerId: string, stat: StatKey) => {
+    setHistory(h => [...h.slice(-19), players]);
     setPlayers(prev => prev.map((p) => {
       if (p.id !== playerId) return p;
       const updated = { ...p, [stat]: p[stat] + 1 };
@@ -164,6 +176,7 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, in
   };
 
   const updateFormationStat = (lineId: string, stat: "plus" | "minus") => {
+    setHistory(h => [...h.slice(-19), players]);
     setPlayers(prev => prev.map((p) => {
       if (p.lineId !== lineId || p.role === "goalkeeper") return p;
       const updated = { ...p, [stat]: p[stat] + 1 };
@@ -218,13 +231,13 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, in
               <button onClick={() => setOurScore(ourScore + 1)}
                 className="text-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer">
                 <div className="text-4xl font-mono">{ourScore}</div>
-                <div className="text-sm text-gray-600 mt-1">Náš tým</div>
+                <div className="text-sm text-gray-600 mt-1 max-w-32 truncate">{myTeamName || "Náš tým"}</div>
               </button>
               <div className="text-2xl text-gray-400">:</div>
               <button onClick={() => setOpponentScore(opponentScore + 1)}
                 className="text-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer">
                 <div className="text-4xl font-mono">{opponentScore}</div>
-                <div className="text-sm text-gray-600 mt-1">Soupeř</div>
+                <div className="text-sm text-gray-600 mt-1 max-w-32 truncate">{opponentName || "Soupeř"}</div>
               </button>
             </div>
             <p className="text-xs text-gray-500 text-center mt-4">Klepněte na skóre pro přidání gólu</p>
@@ -249,9 +262,10 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, in
                 <Button variant={sortBy === "name" ? "secondary" : "ghost"} size="sm"
                   className="h-7 px-2 text-xs"
                   onClick={() => setSortBy(sortBy === "name" ? "formation" : "name")}>A–Z</Button>
-                <Button variant="ghost" size="icon" onClick={resetStats}
-                  className="h-7 w-7" title="Resetovat statistiky">
-                  <RotateCcw className="size-4" />
+                <Button variant="ghost" size="icon" onClick={undo}
+                  disabled={history.length === 0}
+                  className="h-7 w-7" title="Vrátit poslední statistiku">
+                  <Undo2 className="size-4" />
                 </Button>
               </div>
             </div>

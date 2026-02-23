@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, ArrowLeft, ChevronRight, Search } from "lucide-react";
+import { Loader2, ArrowLeft, ChevronRight, Search, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -20,7 +20,7 @@ import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
   onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string, matchDate?: string, competition?: string) => void;
-  onManualEntry: (initialPlayers?: Player[]) => void;
+  onManualEntry: (initialPlayers?: Player[], teamName?: string, opponentName?: string) => void;
   onContinueMatch: (match: CompletedMatch) => void;
   onShowStats: () => void;
 }
@@ -71,11 +71,13 @@ function MatchListRow({
   match,
   loading,
   isPast,
+  savedMatch,
   onClick,
 }: {
   match: MatchListItem;
   loading: boolean;
   isPast: boolean;
+  savedMatch?: CompletedMatch;
   onClick: () => void;
 }) {
   const label =
@@ -88,20 +90,30 @@ function MatchListRow({
       onClick={onClick}
       disabled={loading}
       className={`w-full flex items-center justify-between p-3 border rounded disabled:opacity-50 text-left transition-colors ${
-        isPast
+        savedMatch
+          ? "bg-green-50 hover:bg-green-100 border-green-200"
+          : isPast
           ? "bg-gray-100 hover:bg-gray-200 border-gray-200"
           : "bg-white hover:bg-gray-50 border-gray-200"
       }`}
     >
-      <div>
-        <div className={`font-medium text-sm ${isPast ? "text-gray-400" : "text-gray-900"}`}>{label}</div>
-        {match.date && <div className={`text-xs ${isPast ? "text-gray-400" : "text-gray-500"}`}>{match.date}</div>}
+      <div className="min-w-0">
+        <div className={`font-medium text-sm truncate ${savedMatch ? "text-green-700" : isPast ? "text-gray-400" : "text-gray-900"}`}>{label}</div>
+        {match.date && <div className={`text-xs ${savedMatch ? "text-green-600" : isPast ? "text-gray-400" : "text-gray-500"}`}>{match.date}</div>}
       </div>
-      {loading ? (
-        <Loader2 className="size-4 animate-spin text-gray-400 shrink-0" />
-      ) : (
-        <ChevronRight className={`size-4 shrink-0 ${isPast ? "text-gray-300" : "text-gray-400"}`} />
-      )}
+      <div className="flex items-center gap-2 shrink-0 ml-2">
+        {savedMatch && (
+          <span className="flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-100 rounded px-1.5 py-0.5">
+            <CheckCircle2 className="size-3" />
+            {savedMatch.ourScore}:{savedMatch.opponentScore}
+          </span>
+        )}
+        {loading ? (
+          <Loader2 className="size-4 animate-spin text-gray-400" />
+        ) : (
+          <ChevronRight className={`size-4 ${savedMatch ? "text-green-400" : isPast ? "text-gray-300" : "text-gray-400"}`} />
+        )}
+      </div>
     </button>
   );
 }
@@ -153,6 +165,10 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onContinueMatch, on
 
   // Direct match ID entry
   const [directMatchId, setDirectMatchId] = useState("");
+
+  // Manual entry team names
+  const [manualTeamName, setManualTeamName] = useState("");
+  const [manualOpponentName, setManualOpponentName] = useState("");
 
   // Loaded roster
   const [roster, setRoster] = useState<MatchRoster | null>(null);
@@ -421,10 +437,28 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onContinueMatch, on
 
                   {(() => {
                     const now = new Date();
-                    const visible = matchList.filter((m) => showPast || !m.dateIso || new Date(m.dateIso) >= now);
                     const pastCount = matchList.filter((m) => !!m.dateIso && new Date(m.dateIso) < now).length;
+                    const savedMatchMap = new Map(
+                      getMatches()
+                        .filter((m) => m.fisMatchId)
+                        .map((m) => [m.fisMatchId!, m] as [string, CompletedMatch])
+                    );
+                    const baseVisible = matchList.filter((m) => showPast || !m.dateIso || new Date(m.dateIso) >= now);
+                    const visible = showPast
+                      ? [...baseVisible].sort((a, b) => {
+                          const aT = a.dateIso ? new Date(a.dateIso).getTime() : 0;
+                          const bT = b.dateIso ? new Date(b.dateIso).getTime() : 0;
+                          return bT - aT;
+                        })
+                      : baseVisible;
                     return (
                       <>
+                        {pastCount > 0 && (
+                          <Button variant="ghost" size="sm" className="text-xs text-gray-400 px-0"
+                            onClick={() => setShowPast((v) => !v)}>
+                            {showPast ? "Skrýt odehrané" : `Zobrazit odehrané (${pastCount})`}
+                          </Button>
+                        )}
                         <div className="max-h-96 overflow-y-auto space-y-1">
                           {visible.map((match) => {
                             const isPast = !!match.dateIso && new Date(match.dateIso) < now;
@@ -434,17 +468,12 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onContinueMatch, on
                                 match={match}
                                 loading={loadingMatchId === match.matchId}
                                 isPast={isPast}
+                                savedMatch={savedMatchMap.get(match.matchId)}
                                 onClick={() => handleMatchSelect(match.matchId)}
                               />
                             );
                           })}
                         </div>
-                        {pastCount > 0 && (
-                          <Button variant="ghost" size="sm" className="text-xs text-gray-400 px-0"
-                            onClick={() => setShowPast((v) => !v)}>
-                            {showPast ? "Skrýt odehrané" : `Zobrazit odehrané (${pastCount})`}
-                          </Button>
-                        )}
                       </>
                     );
                   })()}
@@ -513,14 +542,28 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onContinueMatch, on
                 </>
               )}
 
-              <Button variant="ghost" className="w-full" onClick={() => onManualEntry()}>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Náš tým (volitelné)"
+                  value={manualTeamName}
+                  onChange={(e) => setManualTeamName(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <Input
+                  placeholder="Soupeř (volitelné)"
+                  value={manualOpponentName}
+                  onChange={(e) => setManualOpponentName(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <Button variant="ghost" className="w-full" onClick={() => onManualEntry(undefined, manualTeamName || undefined, manualOpponentName || undefined)}>
                 Zadat ručně
               </Button>
               {lastPlayers && (
                 <Button
                   variant="ghost"
                   className="w-full"
-                  onClick={() => onManualEntry(lastPlayers)}
+                  onClick={() => onManualEntry(lastPlayers, manualTeamName || undefined, manualOpponentName || undefined)}
                 >
                   Použít soupisku z posledního zápasu
                 </Button>

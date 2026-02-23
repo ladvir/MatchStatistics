@@ -40,6 +40,7 @@ export default function App() {
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
   const [initialOurScore, setInitialOurScore] = useState(0);
   const [initialOpponentScore, setInitialOpponentScore] = useState(0);
+  const [myOpponentName, setMyOpponentName] = useState<string | undefined>(undefined);
 
   const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string, competition?: string) => {
     setPlayers(rosterToPlayers(team));
@@ -52,16 +53,21 @@ export default function App() {
     setMatchLabel(label);
     setMatchDate(date ?? "");
     setMyTeamName(team.teamName);
+    setMyOpponentName(opponentName);
     setMyCompetition(competition);
     setMyFisMatchId(matchId);
     setView("setup");
   };
 
-  const handleManualEntry = (initialPlayers?: Player[]) => {
+  const handleManualEntry = (initialPlayers?: Player[], teamName?: string, opponentName?: string) => {
     setPlayers(initialPlayers ?? []);
     setLines(DEFAULT_LINES);
-    setMatchLabel("");
-    setMyTeamName("");
+    const label = teamName && opponentName
+      ? `${teamName} vs ${opponentName}`
+      : teamName || "";
+    setMatchLabel(label);
+    setMyTeamName(teamName || "");
+    setMyOpponentName(opponentName || undefined);
     setMyCompetition(undefined);
     setMyFisMatchId(undefined);
     setView("setup");
@@ -72,6 +78,8 @@ export default function App() {
     setLines(DEFAULT_LINES);
     setMatchLabel(match.label);
     setMyTeamName(match.teamName ?? "");
+    const vsIdx = match.label.indexOf(" vs ");
+    setMyOpponentName(vsIdx >= 0 ? match.label.slice(vsIdx + 4) : undefined);
     setMyCompetition(match.competition);
     setMyFisMatchId(match.fisMatchId);
     setCurrentMatchStorageId(match.id);
@@ -143,6 +151,8 @@ export default function App() {
           lines={lines}
           matchLabel={matchLabel}
           matchDate={matchDate}
+          myTeamName={myTeamName || undefined}
+          opponentName={myOpponentName}
           initialOurScore={initialOurScore}
           initialOpponentScore={initialOpponentScore}
           onFinish={handleFinishMatch}
