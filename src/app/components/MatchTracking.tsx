@@ -133,7 +133,7 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [ourScore, setOurScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [sortBy, setSortBy] = useState<"default" | "number" | "name">("default");
+  const [sortBy, setSortBy] = useState<"formation" | "number" | "name">("formation");
 
   const updatePlayerStat = (playerId: string, stat: StatKey) => {
     setPlayers(players.map((p) => {
@@ -159,7 +159,7 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
   const sortList = (list: Player[]) => {
     if (sortBy === "number") return [...list].sort((a, b) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0));
     if (sortBy === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "cs"));
-    return list;
+    return list; // "formation" = preserve group order
   };
 
   const goalkeeper = players.filter((p) => p.role === "goalkeeper");
@@ -218,12 +218,15 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
             <div className="flex items-center justify-between">
               <CardTitle>Soupiska</CardTitle>
               <div className="flex items-center gap-1">
+                <Button variant={sortBy === "formation" ? "secondary" : "ghost"} size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setSortBy("formation")}>F</Button>
                 <Button variant={sortBy === "number" ? "secondary" : "ghost"} size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setSortBy(sortBy === "number" ? "default" : "number")}>#</Button>
+                  onClick={() => setSortBy(sortBy === "number" ? "formation" : "number")}>#</Button>
                 <Button variant={sortBy === "name" ? "secondary" : "ghost"} size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setSortBy(sortBy === "name" ? "default" : "name")}>A–Z</Button>
+                  onClick={() => setSortBy(sortBy === "name" ? "formation" : "name")}>A–Z</Button>
                 <Button variant="ghost" size="icon" onClick={resetStats}
                   className="h-7 w-7" title="Resetovat statistiky">
                   <RotateCcw className="size-4" />

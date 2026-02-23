@@ -1,10 +1,9 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, Loader2, Share2, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Loader2, Share2, Trash2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { CompletedMatch, getMatches, deleteMatch } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
@@ -57,14 +56,30 @@ function downloadDataUrl(dataUrl: string, filename: string) {
   a.click();
 }
 
-type SortKey = "number" | "name" | "shots" | "goals" | "assists" | "plus" | "minus" | "plusMinus";
+type SortKey = "formation" | "number" | "name" | "shots" | "goals" | "assists" | "plus" | "minus" | "plusMinus";
 type SortDir = "asc" | "desc";
+
+function formationOrder(p: Player): number {
+  if (p.role === "goalkeeper") return 0;
+  if (!p.lineId) return 999;
+  return parseInt(p.lineId.replace("line-", "")) || 99;
+}
+
+function formationLabel(p: Player): string {
+  if (p.role === "goalkeeper") return "BG";
+  if (!p.lineId) return "—";
+  const m = p.lineId.match(/line-(\d+)/);
+  return m ? `F${m[1]}` : p.lineId;
+}
 
 function sortPlayers(players: Player[], key: SortKey, dir: SortDir): Player[] {
   return [...players].sort((a, b) => {
     let aVal: string | number;
     let bVal: string | number;
-    if (key === "number") {
+    if (key === "formation") {
+      aVal = formationOrder(a);
+      bVal = formationOrder(b);
+    } else if (key === "number") {
       aVal = parseInt(a.number) || 0;
       bVal = parseInt(b.number) || 0;
     } else if (key === "name") {
@@ -95,7 +110,7 @@ function StatsTable({ players }: { players: Player[] }) {
       setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "name" || key === "number" ? "asc" : "desc");
+      setSortDir(key === "name" || key === "number" || key === "formation" ? "asc" : "desc");
     }
   };
 
@@ -117,9 +132,10 @@ function StatsTable({ players }: { players: Player[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="space-y-1 min-w-[400px]">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
+      <div className="space-y-1 min-w-[420px]">
+        <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
           {col("number", "#", "w-8 flex items-center gap-0.5 hover:text-gray-900 transition-colors")}
+          {col("formation", "F", "w-8 flex items-center justify-center gap-0.5 hover:text-gray-900 transition-colors")}
           {col("name", "Jméno", "text-left flex items-center gap-0.5 hover:text-gray-900 transition-colors")}
           {col("shots", "S")}
           {col("goals", "G")}
@@ -131,9 +147,10 @@ function StatsTable({ players }: { players: Player[] }) {
         {sorted.map((player) => (
           <div
             key={player.id}
-            className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
+            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
           >
             <div className="w-8 font-mono text-sm">{player.number}</div>
+            <div className="w-8 text-center text-xs text-gray-400 font-mono">{formationLabel(player)}</div>
             <div className="text-sm truncate">{player.name}</div>
             <div className="w-10 text-center font-mono text-sm">{player.shots ?? 0}</div>
             <div className="w-10 text-center font-mono text-sm">{player.goals}</div>
@@ -166,7 +183,6 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
   );
   const [sharingMatch, setSharingMatch] = useState(false);
   const [sharingAll, setSharingAll] = useState(false);
-  const [previewImage, setPreviewImage] = useState<{ dataUrl: string; filename: string } | null>(null);
 
   const matchCardRef = useRef<HTMLDivElement>(null);
   const allCardRef = useRef<HTMLDivElement>(null);
@@ -185,7 +201,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
     setSharingMatch(true);
     try {
       const dataUrl = await captureImage(matchCardRef.current);
-      setPreviewImage({ dataUrl, filename: selectedMatch?.label ?? "statistiky" });
+      downloadDataUrl(dataUrl, selectedMatch?.label ?? "statistiky");
     } finally {
       setSharingMatch(false);
     }
@@ -196,7 +212,7 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
     setSharingAll(true);
     try {
       const dataUrl = await captureImage(allCardRef.current);
-      setPreviewImage({ dataUrl, filename: "statistiky-celkem" });
+      downloadDataUrl(dataUrl, "statistiky-celkem");
     } finally {
       setSharingAll(false);
     }
@@ -207,32 +223,6 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
 
   return (
     <>
-    <Dialog open={!!previewImage} onOpenChange={(open) => { if (!open) setPreviewImage(null); }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Sdílet statistiky</DialogTitle>
-        </DialogHeader>
-        {previewImage && (
-          <div className="space-y-4">
-            <img
-              src={previewImage.dataUrl}
-              alt="Statistiky"
-              className="w-full rounded border"
-            />
-            <Button
-              className="w-full"
-              onClick={() => downloadDataUrl(previewImage.dataUrl, previewImage.filename)}
-            >
-              <Download className="size-4 mr-2" />
-              Stáhnout obrázek
-            </Button>
-            <p className="text-xs text-gray-500 text-center">
-              Na mobilu podržte obrázek prstem → Uložit → sdílejte z galerie přes WhatsApp
-            </p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center justify-between">

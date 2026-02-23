@@ -84,6 +84,18 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
     }]);
   };
 
+  const [sortBy, setSortBy] = useState<"formation" | "number" | "name">("formation");
+
+  const sortedPlayers = (() => {
+    if (sortBy === "number") return [...players].sort((a, b) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0));
+    if (sortBy === "name") return [...players].sort((a, b) => a.name.localeCompare(b.name, "cs"));
+    return [...players].sort((a, b) => {
+      const aOrd = a.role === "goalkeeper" ? 0 : a.lineId ? (parseInt(a.lineId.replace("line-", "")) || 99) : 999;
+      const bOrd = b.role === "goalkeeper" ? 0 : b.lineId ? (parseInt(b.lineId.replace("line-", "")) || 99) : 999;
+      return aOrd - bOrd;
+    });
+  })();
+
   const goalkeeperCount = players.filter((p) => p.role === "goalkeeper").length;
   const substituteCount = players.filter((p) => p.role !== "goalkeeper" && !p.lineId).length;
 
@@ -124,9 +136,22 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
 
             {players.length > 0 && (
               <div className="space-y-2">
-                <h3 className="font-medium">Sestava ({players.length})</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Sestava ({players.length})</h3>
+                  <div className="flex items-center gap-1">
+                    <Button variant={sortBy === "formation" ? "secondary" : "ghost"} size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setSortBy("formation")}>F</Button>
+                    <Button variant={sortBy === "number" ? "secondary" : "ghost"} size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setSortBy(sortBy === "number" ? "formation" : "number")}>#</Button>
+                    <Button variant={sortBy === "name" ? "secondary" : "ghost"} size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setSortBy(sortBy === "name" ? "formation" : "name")}>A–Z</Button>
+                  </div>
+                </div>
                 <div className="space-y-1">
-                  {players.map((player) => {
+                  {sortedPlayers.map((player) => {
                     const isGkByPosition = player.position === "G";
                     const isFieldByPosition = player.position === "U" || player.position === "O";
 
