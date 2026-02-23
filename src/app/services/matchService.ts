@@ -2,6 +2,7 @@ export interface RosterPlayer {
   number: string;
   name: string;
   birthYear?: string;
+  position?: "U" | "O" | "G";
 }
 
 export interface TeamRoster {
@@ -89,7 +90,11 @@ function parseTeamDiv(div: Element, fallbackName: string): TeamRoster {
     const yearCell = [...cells].reverse().find((c) => /^\d{4}$/.test(c.textContent?.trim() ?? ''));
     const birthYear = yearCell?.textContent?.trim() || undefined;
 
-    players.push({ number, name, birthYear });
+    // Position: cell with exactly "U", "O" or "G"
+    const positionCell = cells.find((c) => /^[UOG]$/.test(c.textContent?.trim() ?? ''));
+    const position = positionCell?.textContent?.trim() as RosterPlayer['position'] | undefined;
+
+    players.push({ number, name, birthYear, position });
   });
 
   return { teamName, players };

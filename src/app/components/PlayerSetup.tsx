@@ -4,7 +4,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ArrowLeft, Plus, X } from "lucide-react";
-import { Line } from "../types";
+import { Line, LINE_COLORS, LINE_COLOR_MAP } from "../types";
 
 export interface Player {
   id: string;
@@ -18,7 +18,16 @@ export interface Player {
   plusMinus: number;
   role?: "goalkeeper" | "field";
   lineId?: string | null;
+  position?: "U" | "O" | "G";
 }
+
+const POSITION_STYLE: Record<string, string> = {
+  U: "bg-orange-100 text-orange-700",
+  O: "bg-sky-100 text-sky-700",
+  G: "bg-yellow-100 text-yellow-700",
+};
+
+const POSITION_LABEL: Record<string, string> = { U: "Ú", O: "O", G: "BG" };
 
 interface PlayerSetupProps {
   onStartMatch: (players: Player[], lines: Line[]) => void;
@@ -35,26 +44,18 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
 
   const addPlayer = () => {
     if (number && name) {
-      const newPlayer: Player = {
+      setPlayers([...players, {
         id: Date.now().toString(),
         number,
         name,
-        shots: 0,
-        goals: 0,
-        assists: 0,
-        plus: 0,
-        minus: 0,
-        plusMinus: 0,
-      };
-      setPlayers([...players, newPlayer]);
+        shots: 0, goals: 0, assists: 0, plus: 0, minus: 0, plusMinus: 0,
+      }]);
       setNumber("");
       setName("");
     }
   };
 
-  const removePlayer = (id: string) => {
-    setPlayers(players.filter((p) => p.id !== id));
-  };
+  const removePlayer = (id: string) => setPlayers(players.filter((p) => p.id !== id));
 
   const assignGoalkeeper = (playerId: string) => {
     setPlayers(players.map((p) => {
@@ -76,8 +77,11 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
 
   const addLine = () => {
     if (lines.length >= 4) return;
-    const n = lines.length + 1;
-    setLines([...lines, { id: `line-${n}`, name: `Formace ${n}` }]);
+    setLines([...lines, {
+      id: `line-${lines.length + 1}`,
+      name: `Formace ${lines.length + 1}`,
+      color: LINE_COLORS[lines.length],
+    }]);
   };
 
   const goalkeeperCount = players.filter((p) => p.role === "goalkeeper").length;
@@ -103,30 +107,18 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
             <div className="flex gap-2">
               <div className="flex-1">
                 <Label htmlFor="number">Číslo</Label>
-                <Input
-                  id="number"
-                  type="text"
-                  value={number}
-                  onChange={(e) => setNumber(e.target.value)}
-                  placeholder="10"
-                  onKeyDown={(e) => e.key === "Enter" && addPlayer()}
-                />
+                <Input id="number" type="text" value={number}
+                  onChange={(e) => setNumber(e.target.value)} placeholder="10"
+                  onKeyDown={(e) => e.key === "Enter" && addPlayer()} />
               </div>
               <div className="flex-[2]">
                 <Label htmlFor="name">Jméno hráče</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Jan Novák"
-                  onKeyDown={(e) => e.key === "Enter" && addPlayer()}
-                />
+                <Input id="name" type="text" value={name}
+                  onChange={(e) => setName(e.target.value)} placeholder="Jan Novák"
+                  onKeyDown={(e) => e.key === "Enter" && addPlayer()} />
               </div>
               <div className="flex items-end">
-                <Button onClick={addPlayer} size="icon">
-                  <Plus className="size-4" />
-                </Button>
+                <Button onClick={addPlayer} size="icon"><Plus className="size-4" /></Button>
               </div>
             </div>
 
@@ -134,73 +126,76 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
               <div className="space-y-2">
                 <h3 className="font-medium">Sestava ({players.length})</h3>
                 <div className="space-y-1">
-                  {players.map((player) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center gap-2 p-2 bg-white border rounded"
-                    >
-                      <span className="font-mono text-sm w-7 shrink-0">{player.number}</span>
-                      <span className="text-sm truncate flex-1">{player.name}</span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          variant={player.role === "goalkeeper" ? "secondary" : "outline"}
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => assignGoalkeeper(player.id)}
-                        >
-                          BG
+                  {players.map((player) => {
+                    const isGkByPosition = player.position === "G";
+                    const isFieldByPosition = player.position === "U" || player.position === "O";
+
+                    return (
+                      <div key={player.id} className="flex items-center gap-2 p-2 bg-white border rounded">
+                        <span className="font-mono text-sm w-7 shrink-0">{player.number}</span>
+                        {player.position && (
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded shrink-0 ${POSITION_STYLE[player.position]}`}>
+                            {POSITION_LABEL[player.position]}
+                          </span>
+                        )}
+                        <span className="text-sm truncate flex-1">{player.name}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* BG button — hidden for field-position players */}
+                          {!isFieldByPosition && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`h-7 px-2 text-xs ${player.role === "goalkeeper" ? "bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200" : ""}`}
+                              onClick={() => !isGkByPosition && assignGoalkeeper(player.id)}
+                              disabled={isGkByPosition}
+                            >
+                              BG
+                            </Button>
+                          )}
+                          {/* Formation buttons — hidden for GK-position players */}
+                          {!isGkByPosition && lines.map((line) => {
+                            const isActive = player.role !== "goalkeeper" && player.lineId === line.id;
+                            const colors = LINE_COLOR_MAP[line.color];
+                            return (
+                              <Button
+                                key={line.id}
+                                variant="outline"
+                                size="sm"
+                                className={`h-7 px-2 text-xs ${isActive ? colors.activeBtn : ""}`}
+                                onClick={() => assignLine(player.id, line.id)}
+                              >
+                                {line.name.replace("Formace ", "F")}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => removePlayer(player.id)}>
+                          <X className="size-4" />
                         </Button>
-                        {lines.map((line) => (
-                          <Button
-                            key={line.id}
-                            variant={player.role !== "goalkeeper" && player.lineId === line.id ? "secondary" : "outline"}
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => assignLine(player.id, line.id)}
-                          >
-                            {line.name.replace("Formace ", "F")}
-                          </Button>
-                        ))}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePlayer(player.id)}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                <div className="text-xs text-gray-400 space-y-0.5 pt-1">
+                <div className="text-xs text-gray-400 flex flex-wrap gap-x-3 gap-y-1 pt-1">
                   <span>BG: {goalkeeperCount}</span>
                   {lines.map((line) => (
-                    <span key={line.id} className="ml-3">
+                    <span key={line.id} className={LINE_COLOR_MAP[line.color].header}>
                       {line.name}: {players.filter((p) => p.lineId === line.id).length}
                     </span>
                   ))}
-                  <span className="ml-3">Náhradníci: {substituteCount}</span>
+                  <span>Náhradníci: {substituteCount}</span>
                 </div>
 
                 {lines.length < 4 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-gray-500 px-0"
-                    onClick={addLine}
-                  >
+                  <Button variant="ghost" size="sm" className="text-xs text-gray-500 px-0" onClick={addLine}>
                     + Přidat formaci
                   </Button>
                 )}
               </div>
             )}
 
-            <Button
-              onClick={() => onStartMatch(players, lines)}
-              disabled={players.length === 0}
-              className="w-full"
-            >
+            <Button onClick={() => onStartMatch(players, lines)} disabled={players.length === 0} className="w-full">
               Zahájit utkání
             </Button>
           </CardContent>

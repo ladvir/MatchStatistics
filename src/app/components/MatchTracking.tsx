@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ChevronLeft, RotateCcw } from "lucide-react";
-import { Line } from "../types";
+import { Line, LINE_COLOR_MAP } from "../types";
 
 interface MatchTrackingProps {
   initialPlayers: Player[];
@@ -15,6 +15,13 @@ interface MatchTrackingProps {
 }
 
 type StatKey = "shots" | "goals" | "assists" | "plus" | "minus";
+
+const POSITION_STYLE: Record<string, string> = {
+  U: "bg-orange-100 text-orange-700",
+  O: "bg-sky-100 text-sky-700",
+  G: "bg-yellow-100 text-yellow-700",
+};
+const POSITION_LABEL: Record<string, string> = { U: "Ú", O: "O", G: "BG" };
 
 function formatMatchDate(isoDate: string): string {
   const d = new Date(isoDate);
@@ -35,6 +42,11 @@ function PlayerRow({ player, lines, showReassign, onStat, onReassign }: PlayerRo
     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 p-2 border-b last:border-b-0">
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <span className="font-mono text-sm w-7 shrink-0">{player.number}</span>
+        {player.position && (
+          <span className={`text-xs font-medium px-1 py-0.5 rounded shrink-0 ${POSITION_STYLE[player.position]}`}>
+            {POSITION_LABEL[player.position]}
+          </span>
+        )}
         <span className="text-sm truncate">{player.name}</span>
       </div>
       <div className="flex items-center justify-between sm:justify-end sm:ml-auto gap-1">
@@ -88,6 +100,7 @@ function PlayerRow({ player, lines, showReassign, onStat, onReassign }: PlayerRo
 
 interface GroupSectionProps {
   title: string;
+  titleClass: string;
   players: Player[];
   lines: Line[];
   showReassign: boolean;
@@ -95,11 +108,11 @@ interface GroupSectionProps {
   onReassign: (id: string, lineId: string | null) => void;
 }
 
-function GroupSection({ title, players, lines, showReassign, onStat, onReassign }: GroupSectionProps) {
+function GroupSection({ title, titleClass, players, lines, showReassign, onStat, onReassign }: GroupSectionProps) {
   if (players.length === 0) return null;
   return (
     <div>
-      <div className="text-xs font-medium text-gray-400 uppercase tracking-wide px-2 pt-3 pb-1">
+      <div className={`text-xs font-semibold uppercase tracking-wide px-2 pt-3 pb-1 ${titleClass}`}>
         {title}
       </div>
       {players.map((player) => (
@@ -126,9 +139,7 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
     setPlayers(players.map((p) => {
       if (p.id !== playerId) return p;
       const updated = { ...p, [stat]: p[stat] + 1 };
-      if (stat === "plus" || stat === "minus") {
-        updated.plusMinus = updated.plus - updated.minus;
-      }
+      if (stat === "plus" || stat === "minus") updated.plusMinus = updated.plus - updated.minus;
       return updated;
     }));
   };
@@ -167,12 +178,8 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
             {matchLabel && <p className="text-sm text-gray-500">{matchLabel}</p>}
             {matchDate && <p className="text-xs text-gray-400">{formatMatchDate(matchDate)}</p>}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto text-gray-500"
-            onClick={() => onFinish(players, ourScore, opponentScore)}
-          >
+          <Button variant="ghost" size="sm" className="ml-auto text-gray-500"
+            onClick={() => onFinish(players, ourScore, opponentScore)}>
             Přehled statistik
           </Button>
         </div>
@@ -180,35 +187,25 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
         {/* Skóre */}
         <Card>
           <CardContent className="pt-6 relative">
-            <Button
-              variant="ghost"
-              size="icon"
+            <Button variant="ghost" size="icon"
               onClick={() => { setOurScore(0); setOpponentScore(0); }}
-              className="absolute top-2 right-2 h-8 w-8"
-              title="Resetovat skóre"
-            >
+              className="absolute top-2 right-2 h-8 w-8" title="Resetovat skóre">
               <RotateCcw className="size-4" />
             </Button>
             <div className="flex items-center justify-center gap-8">
-              <button
-                onClick={() => setOurScore(ourScore + 1)}
-                className="text-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer"
-              >
+              <button onClick={() => setOurScore(ourScore + 1)}
+                className="text-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer">
                 <div className="text-4xl font-mono">{ourScore}</div>
                 <div className="text-sm text-gray-600 mt-1">Náš tým</div>
               </button>
               <div className="text-2xl text-gray-400">:</div>
-              <button
-                onClick={() => setOpponentScore(opponentScore + 1)}
-                className="text-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer"
-              >
+              <button onClick={() => setOpponentScore(opponentScore + 1)}
+                className="text-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer">
                 <div className="text-4xl font-mono">{opponentScore}</div>
                 <div className="text-sm text-gray-600 mt-1">Soupeř</div>
               </button>
             </div>
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Klepněte na skóre pro přidání gólu
-            </p>
+            <p className="text-xs text-gray-500 text-center mt-4">Klepněte na skóre pro přidání gólu</p>
           </CardContent>
         </Card>
 
@@ -221,47 +218,28 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
             <div className="flex items-center justify-between">
               <CardTitle>Soupiska</CardTitle>
               <div className="flex items-center gap-1">
-                <Button
-                  variant={sortBy === "number" ? "secondary" : "ghost"}
-                  size="sm"
+                <Button variant={sortBy === "number" ? "secondary" : "ghost"} size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setSortBy(sortBy === "number" ? "default" : "number")}
-                >
-                  #
-                </Button>
-                <Button
-                  variant={sortBy === "name" ? "secondary" : "ghost"}
-                  size="sm"
+                  onClick={() => setSortBy(sortBy === "number" ? "default" : "number")}>#</Button>
+                <Button variant={sortBy === "name" ? "secondary" : "ghost"} size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setSortBy(sortBy === "name" ? "default" : "name")}
-                >
-                  A–Z
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={resetStats}
-                  className="h-7 w-7"
-                  title="Resetovat statistiky"
-                >
+                  onClick={() => setSortBy(sortBy === "name" ? "default" : "name")}>A–Z</Button>
+                <Button variant="ghost" size="icon" onClick={resetStats}
+                  className="h-7 w-7" title="Resetovat statistiky">
                   <RotateCcw className="size-4" />
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <GroupSection
-              title="Brankář"
-              players={goalkeeper}
-              lines={lines}
-              showReassign={false}
-              onStat={updatePlayerStat}
-              onReassign={reassignPlayer}
-            />
+            <GroupSection title="Brankář" titleClass="text-yellow-600"
+              players={goalkeeper} lines={lines} showReassign={false}
+              onStat={updatePlayerStat} onReassign={reassignPlayer} />
             {lines.map((line) => (
               <GroupSection
                 key={line.id}
                 title={line.name}
+                titleClass={LINE_COLOR_MAP[line.color].header}
                 players={playersForLine(line.id)}
                 lines={lines}
                 showReassign={true}
@@ -269,14 +247,9 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
                 onReassign={reassignPlayer}
               />
             ))}
-            <GroupSection
-              title="Náhradníci"
-              players={substitutes}
-              lines={lines}
-              showReassign={true}
-              onStat={updatePlayerStat}
-              onReassign={reassignPlayer}
-            />
+            <GroupSection title="Náhradníci" titleClass="text-gray-400"
+              players={substitutes} lines={lines} showReassign={true}
+              onStat={updatePlayerStat} onReassign={reassignPlayer} />
           </CardContent>
         </Card>
       </div>
