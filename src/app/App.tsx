@@ -12,8 +12,8 @@ import { Line, DEFAULT_LINES } from "./types";
 type AppView = "landing" | "loader" | "setup" | "tracking" | "stats";
 
 function rosterToPlayers(team: TeamRoster): Player[] {
-  return team.players.map((p, i) => ({
-    id: `${i}-${p.name}`,
+  return team.players.map((p) => ({
+    id: crypto.randomUUID(),
     number: p.number,
     name: p.name,
     position: p.position,

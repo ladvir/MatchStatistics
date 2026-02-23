@@ -44,8 +44,8 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
 
   const addPlayer = () => {
     if (number && name) {
-      setPlayers([...players, {
-        id: Date.now().toString(),
+      setPlayers(prev => [...prev, {
+        id: crypto.randomUUID(),
         number,
         name,
         shots: 0, goals: 0, assists: 0, plus: 0, minus: 0, plusMinus: 0,
@@ -55,10 +55,10 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
     }
   };
 
-  const removePlayer = (id: string) => setPlayers(players.filter((p) => p.id !== id));
+  const removePlayer = (id: string) => setPlayers(prev => prev.filter((p) => p.id !== id));
 
   const assignGoalkeeper = (playerId: string) => {
-    setPlayers(players.map((p) => {
+    setPlayers(prev => prev.map((p) => {
       if (p.id !== playerId) return p;
       return p.role === "goalkeeper"
         ? { ...p, role: "field", lineId: null }
@@ -67,7 +67,7 @@ export function PlayerSetup({ onStartMatch, initialPlayers, lines: initialLines,
   };
 
   const assignLine = (playerId: string, lineId: string) => {
-    setPlayers(players.map((p) => {
+    setPlayers(prev => prev.map((p) => {
       if (p.id !== playerId) return p;
       return p.role !== "goalkeeper" && p.lineId === lineId
         ? { ...p, role: "field", lineId: null }

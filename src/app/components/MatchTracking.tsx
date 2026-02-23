@@ -136,7 +136,7 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
   const [sortBy, setSortBy] = useState<"formation" | "number" | "name">("formation");
 
   const updatePlayerStat = (playerId: string, stat: StatKey) => {
-    setPlayers(players.map((p) => {
+    setPlayers(prev => prev.map((p) => {
       if (p.id !== playerId) return p;
       const updated = { ...p, [stat]: p[stat] + 1 };
       if (stat === "plus" || stat === "minus") updated.plusMinus = updated.plus - updated.minus;
@@ -145,13 +145,13 @@ export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, on
   };
 
   const reassignPlayer = (playerId: string, lineId: string | null) => {
-    setPlayers(players.map((p) =>
+    setPlayers(prev => prev.map((p) =>
       p.id !== playerId ? p : { ...p, role: "field", lineId }
     ));
   };
 
   const resetStats = () => {
-    setPlayers(players.map((p) => ({
+    setPlayers(prev => prev.map((p) => ({
       ...p, shots: 0, goals: 0, assists: 0, plus: 0, minus: 0, plusMinus: 0,
     })));
   };
