@@ -15,12 +15,13 @@ import {
   TeamRoster,
   TeamSearchResult,
 } from "../services/matchService";
-import { getMatches, getSavedTeam, saveTeam, clearSavedTeam } from "../services/storageService";
+import { CompletedMatch, getMatches, getMatchByFisId, getSavedTeam, saveTeam, clearSavedTeam } from "../services/storageService";
 import { Player } from "./PlayerSetup";
 
 interface MatchLoaderProps {
   onRosterLoaded: (myTeam: TeamRoster, matchId?: string, opponentName?: string, matchDate?: string, competition?: string) => void;
   onManualEntry: (initialPlayers?: Player[]) => void;
+  onContinueMatch: (match: CompletedMatch) => void;
   onShowStats: () => void;
 }
 
@@ -121,17 +122,15 @@ function sortMatchList(matches: MatchListItem[]): MatchListItem[] {
   return [...upcoming, ...past, ...withoutDate];
 }
 
-export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: MatchLoaderProps) {
+export function MatchLoader({ onRosterLoaded, onManualEntry, onContinueMatch, onShowStats }: MatchLoaderProps) {
   const lastPlayers = getMatches()[0]?.players?.map((p) => ({
-    ...p,
-    goals: 0,
-    assists: 0,
-    plus: 0,
-    minus: 0,
-    plusMinus: 0,
+    ...p, goals: 0, assists: 0, plus: 0, minus: 0, plusMinus: 0,
   }));
 
   const [view, setView] = useState<LoaderView>("team");
+  const [showPast, setShowPast] = useState(false);
+  const [conflictMatch, setConflictMatch] = useState<CompletedMatch | null>(null);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // Team search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -256,7 +255,15 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
       const side = autoSelectSide(result.data);
       const myTeam = side === "home" ? result.data.home : result.data.away;
       const opponent = side === "home" ? result.data.away : result.data.home;
-      onRosterLoaded(myTeam, result.data.matchId, opponent.teamName, matchDate, selectedCompetition);
+      const proceed = () => onRosterLoaded(myTeam, result.data.matchId, opponent.teamName, matchDate, selectedCompetition);
+
+      const existing = getMatchByFisId(matchId);
+      if (existing) {
+        setPendingAction(() => proceed);
+        setConflictMatch(existing);
+      } else {
+        proceed();
+      }
     } else {
       setRosterError(result.error);
     }
@@ -397,20 +404,50 @@ export function MatchLoader({ onRosterLoaded, onManualEntry, onShowStats }: Matc
                     </Button>
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto space-y-1">
-                    {matchList.map((match) => {
-                      const isPast = !!match.dateIso && new Date(match.dateIso) < new Date();
-                      return (
-                        <MatchListRow
-                          key={match.matchId}
-                          match={match}
-                          loading={loadingMatchId === match.matchId}
-                          isPast={isPast}
-                          onClick={() => handleMatchSelect(match.matchId)}
-                        />
-                      );
-                    })}
-                  </div>
+                  {conflictMatch && (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2">
+                      <p className="text-sm font-medium text-amber-800">Pro tento zápas již existuje uložená statistika</p>
+                      <p className="text-xs text-amber-700">{conflictMatch.label} · {conflictMatch.ourScore}:{conflictMatch.opponentScore}</p>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => { setConflictMatch(null); onContinueMatch(conflictMatch); }}>
+                          Pokračovat ve statistice
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setConflictMatch(null); pendingAction?.(); setPendingAction(null); }}>
+                          Začít znovu
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const now = new Date();
+                    const visible = matchList.filter((m) => showPast || !m.dateIso || new Date(m.dateIso) >= now);
+                    const pastCount = matchList.filter((m) => !!m.dateIso && new Date(m.dateIso) < now).length;
+                    return (
+                      <>
+                        <div className="max-h-96 overflow-y-auto space-y-1">
+                          {visible.map((match) => {
+                            const isPast = !!match.dateIso && new Date(match.dateIso) < now;
+                            return (
+                              <MatchListRow
+                                key={match.matchId}
+                                match={match}
+                                loading={loadingMatchId === match.matchId}
+                                isPast={isPast}
+                                onClick={() => handleMatchSelect(match.matchId)}
+                              />
+                            );
+                          })}
+                        </div>
+                        {pastCount > 0 && (
+                          <Button variant="ghost" size="sm" className="text-xs text-gray-400 px-0"
+                            onClick={() => setShowPast((v) => !v)}>
+                            {showPast ? "Skrýt odehrané" : `Zobrazit odehrané (${pastCount})`}
+                          </Button>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {rosterError && (
                     <RosterError

@@ -11,6 +11,8 @@ interface MatchTrackingProps {
   lines: Line[];
   matchLabel?: string;
   matchDate?: string;
+  initialOurScore?: number;
+  initialOpponentScore?: number;
   onFinish: (players: Player[], ourScore: number, opponentScore: number) => void;
 }
 
@@ -113,17 +115,17 @@ function GroupSection({ title, titleClass, players, lines, showReassign, onStat,
   if (players.length === 0) return null;
   return (
     <div>
-      <div className={`flex items-center justify-between px-2 pt-3 pb-1 ${titleClass}`}>
+      <div className={`flex items-center gap-2 px-2 pt-3 pb-1 ${titleClass}`}>
         <span className="text-xs font-semibold uppercase tracking-wide">{title}</span>
         {onGroupStat && (
-          <div className="flex items-center gap-1">
+          <>
             <Button size="sm" variant="ghost"
-              className="h-6 w-8 p-0 text-green-600 font-semibold text-sm"
+              className="h-6 w-7 p-0 text-green-600 font-bold text-base leading-none"
               onClick={() => onGroupStat("plus")}>+</Button>
             <Button size="sm" variant="ghost"
-              className="h-6 w-8 p-0 text-red-600 font-semibold text-sm"
+              className="h-6 w-7 p-0 text-red-600 font-bold text-base leading-none"
               onClick={() => onGroupStat("minus")}>−</Button>
-          </div>
+          </>
         )}
       </div>
       {players.map((player) => (
@@ -140,10 +142,10 @@ function GroupSection({ title, titleClass, players, lines, showReassign, onStat,
   );
 }
 
-export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, onFinish }: MatchTrackingProps) {
+export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, initialOurScore = 0, initialOpponentScore = 0, onFinish }: MatchTrackingProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
-  const [ourScore, setOurScore] = useState(0);
-  const [opponentScore, setOpponentScore] = useState(0);
+  const [ourScore, setOurScore] = useState(initialOurScore);
+  const [opponentScore, setOpponentScore] = useState(initialOpponentScore);
   const [sortBy, setSortBy] = useState<"formation" | "number" | "name">("formation");
 
   const updatePlayerStat = (playerId: string, stat: StatKey) => {

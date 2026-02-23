@@ -33,9 +33,14 @@ export interface CompletedMatch {
   label: string; // e.g. "Zápas #1227627"
   teamName?: string; // our team name, e.g. "FBC Florbal Praha"
   competition?: string; // e.g. "U18 - krajský přebor"
+  fisMatchId?: string; // FIS match ID for deduplication
   ourScore: number;
   opponentScore: number;
   players: Player[];
+}
+
+export function getMatchByFisId(fisMatchId: string): CompletedMatch | undefined {
+  return getMatches().find((m) => m.fisMatchId === fisMatchId);
 }
 
 export function getMatches(): CompletedMatch[] {

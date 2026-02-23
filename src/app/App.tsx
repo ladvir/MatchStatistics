@@ -36,7 +36,10 @@ export default function App() {
   const [matchDate, setMatchDate] = useState("");
   const [myTeamName, setMyTeamName] = useState("");
   const [myCompetition, setMyCompetition] = useState<string | undefined>(undefined);
+  const [myFisMatchId, setMyFisMatchId] = useState<string | undefined>(undefined);
   const [currentMatchStorageId, setCurrentMatchStorageId] = useState("");
+  const [initialOurScore, setInitialOurScore] = useState(0);
+  const [initialOpponentScore, setInitialOpponentScore] = useState(0);
 
   const handleRosterLoaded = (team: TeamRoster, matchId?: string, opponentName?: string, date?: string, competition?: string) => {
     setPlayers(rosterToPlayers(team));
@@ -50,6 +53,7 @@ export default function App() {
     setMatchDate(date ?? "");
     setMyTeamName(team.teamName);
     setMyCompetition(competition);
+    setMyFisMatchId(matchId);
     setView("setup");
   };
 
@@ -59,13 +63,29 @@ export default function App() {
     setMatchLabel("");
     setMyTeamName("");
     setMyCompetition(undefined);
+    setMyFisMatchId(undefined);
     setView("setup");
+  };
+
+  const handleContinueMatch = (match: CompletedMatch) => {
+    setPlayers(match.players);
+    setLines(DEFAULT_LINES);
+    setMatchLabel(match.label);
+    setMyTeamName(match.teamName ?? "");
+    setMyCompetition(match.competition);
+    setMyFisMatchId(match.fisMatchId);
+    setCurrentMatchStorageId(match.id);
+    setInitialOurScore(match.ourScore);
+    setInitialOpponentScore(match.opponentScore);
+    setView("tracking");
   };
 
   const handleStartMatch = (p: Player[], updatedLines: Line[]) => {
     setPlayers(p);
     setLines(updatedLines);
     setCurrentMatchStorageId(Date.now().toString());
+    setInitialOurScore(0);
+    setInitialOpponentScore(0);
     setView("tracking");
   };
 
@@ -80,6 +100,7 @@ export default function App() {
       label: matchLabel || new Date().toLocaleDateString("cs-CZ"),
       teamName: myTeamName || undefined,
       competition: myCompetition,
+      fisMatchId: myFisMatchId,
       ourScore,
       opponentScore,
       players: finalPlayers,
@@ -104,6 +125,7 @@ export default function App() {
         <MatchLoader
           onRosterLoaded={handleRosterLoaded}
           onManualEntry={handleManualEntry}
+          onContinueMatch={handleContinueMatch}
           onShowStats={() => setView("stats")}
         />
       )}
@@ -121,6 +143,8 @@ export default function App() {
           lines={lines}
           matchLabel={matchLabel}
           matchDate={matchDate}
+          initialOurScore={initialOurScore}
+          initialOpponentScore={initialOpponentScore}
           onFinish={handleFinishMatch}
         />
       )}
