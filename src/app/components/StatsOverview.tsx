@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, FileText, Loader2, Trash2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -46,7 +46,64 @@ function pluralZapas(n: number): string {
 }
 
 async function captureImage(el: HTMLElement): Promise<string> {
-  return toPng(el, { backgroundColor: "#ffffff", pixelRatio: 2 });
+  type OverflowFix = { el: HTMLElement; overflowX: string; width: string };
+  type CardFix = { el: HTMLElement; border: string; borderRadius: string; boxShadow: string };
+  type TruncateFix = { el: HTMLElement; overflow: string; textOverflow: string };
+
+  const overflowFixes: OverflowFix[] = [];
+  const cardFixes: CardFix[] = [];
+  const truncateFixes: TruncateFix[] = [];
+
+  // Remove card border/radius so the export doesn't look like a phone frame
+  el.querySelectorAll<HTMLElement>("[data-slot='card']").forEach((card) => {
+    cardFixes.push({ el: card, border: card.style.border, borderRadius: card.style.borderRadius, boxShadow: card.style.boxShadow });
+    card.style.border = "none";
+    card.style.borderRadius = "0";
+    card.style.boxShadow = "none";
+  });
+
+  // Fix truncated text so full names are visible — must happen BEFORE measuring scrollWidth
+  el.querySelectorAll<HTMLElement>("*").forEach((child) => {
+    const computed = window.getComputedStyle(child);
+    if (computed.textOverflow === "ellipsis") {
+      truncateFixes.push({ el: child, overflow: child.style.overflow, textOverflow: child.style.textOverflow });
+      child.style.overflow = "visible";
+      child.style.textOverflow = "clip";
+    }
+  });
+
+  // Remove overflow restrictions to capture full table content
+  el.querySelectorAll<HTMLElement>("*").forEach((child) => {
+    const computed = window.getComputedStyle(child);
+    if (computed.overflowX === "auto" || computed.overflowX === "scroll") {
+      overflowFixes.push({ el: child, overflowX: child.style.overflowX, width: child.style.width });
+      child.style.overflowX = "visible";
+      child.style.width = child.scrollWidth + "px";
+    }
+  });
+
+  try {
+    return await toPng(el, {
+      backgroundColor: "#ffffff",
+      pixelRatio: 2,
+      width: el.scrollWidth,
+      height: el.scrollHeight,
+    });
+  } finally {
+    overflowFixes.forEach(({ el, overflowX, width }) => {
+      el.style.overflowX = overflowX;
+      el.style.width = width;
+    });
+    cardFixes.forEach(({ el, border, borderRadius, boxShadow }) => {
+      el.style.border = border;
+      el.style.borderRadius = borderRadius;
+      el.style.boxShadow = boxShadow;
+    });
+    truncateFixes.forEach(({ el, overflow, textOverflow }) => {
+      el.style.overflow = overflow;
+      el.style.textOverflow = textOverflow;
+    });
+  }
 }
 
 function downloadDataUrl(dataUrl: string, filename: string) {
@@ -54,6 +111,49 @@ function downloadDataUrl(dataUrl: string, filename: string) {
   a.href = dataUrl;
   a.download = `${filename}.png`;
   a.click();
+}
+
+function downloadText(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function generateTextStats(players: Player[], title: string, subtitle?: string): string {
+  const sorted = sortPlayers(players, "goals", "desc");
+  const lines: string[] = [];
+  lines.push(title);
+  if (subtitle) lines.push(subtitle);
+  lines.push("");
+  const header =
+    " # ".padEnd(5) +
+    "Jméno".padEnd(24) +
+    "  S".padStart(4) +
+    "  G".padStart(4) +
+    "  A".padStart(4) +
+    "   +".padStart(5) +
+    "   -".padStart(5) +
+    "  +/-".padStart(6);
+  lines.push(header);
+  lines.push("-".repeat(header.length));
+  for (const p of sorted) {
+    const pm = (p.plusMinus >= 0 ? "+" : "") + String(p.plusMinus);
+    lines.push(
+      (p.number ?? "").padStart(3).padEnd(5) +
+        p.name.substring(0, 23).padEnd(24) +
+        String(p.shots ?? 0).padStart(4) +
+        String(p.goals).padStart(4) +
+        String(p.assists).padStart(4) +
+        String(p.plus).padStart(5) +
+        String(p.minus).padStart(5) +
+        pm.padStart(6),
+    );
+  }
+  return lines.join("\n");
 }
 
 type SortKey = "formation" | "number" | "name" | "shots" | "goals" | "assists" | "plus" | "minus" | "plusMinus";
@@ -65,12 +165,6 @@ function formationOrder(p: Player): number {
   return parseInt(p.lineId.replace("line-", "")) || 99;
 }
 
-function formationLabel(p: Player): string {
-  if (p.role === "goalkeeper") return "BG";
-  if (!p.lineId) return "—";
-  const m = p.lineId.match(/line-(\d+)/);
-  return m ? `F${m[1]}` : p.lineId;
-}
 
 function sortPlayers(players: Player[], key: SortKey, dir: SortDir): Player[] {
   return [...players].sort((a, b) => {
@@ -132,10 +226,9 @@ function StatsTable({ players }: { players: Player[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="space-y-1 min-w-[420px]">
-        <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
+      <div className="space-y-1 min-w-[360px]">
+        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-xs text-gray-600 font-medium border-b">
           {col("number", "#", "w-8 flex items-center gap-0.5 hover:text-gray-900 transition-colors")}
-          {col("formation", "F", "w-8 flex items-center justify-center gap-0.5 hover:text-gray-900 transition-colors")}
           {col("name", "Jméno", "text-left flex items-center gap-0.5 hover:text-gray-900 transition-colors")}
           {col("shots", "S")}
           {col("goals", "G")}
@@ -147,10 +240,9 @@ function StatsTable({ players }: { players: Player[] }) {
         {sorted.map((player) => (
           <div
             key={player.id}
-            className="grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
+            className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
           >
             <div className="w-8 font-mono text-sm">{player.number}</div>
-            <div className="w-8 text-center text-xs text-gray-400 font-mono">{formationLabel(player)}</div>
             <div className="text-sm truncate">{player.name}</div>
             <div className="w-10 text-center font-mono text-sm">{player.shots ?? 0}</div>
             <div className="w-10 text-center font-mono text-sm">{player.goals}</div>
@@ -183,6 +275,8 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
   );
   const [sharingMatch, setSharingMatch] = useState(false);
   const [sharingAll, setSharingAll] = useState(false);
+  const [sharingMatchText, setSharingMatchText] = useState(false);
+  const [sharingAllText, setSharingAllText] = useState(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const matchCardRef = useRef<HTMLDivElement>(null);
@@ -227,6 +321,39 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
       downloadDataUrl(dataUrl, "statistiky-celkem");
     } finally {
       setSharingAll(false);
+    }
+  };
+
+  const handleShareMatchText = () => {
+    if (!selectedMatch || sharingMatchText) return;
+    setSharingMatchText(true);
+    try {
+      const subtitle = [
+        formatDate(selectedMatch.date),
+        `${selectedMatch.ourScore}:${selectedMatch.opponentScore}`,
+        selectedMatch.teamName,
+        selectedMatch.competition,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      const content = generateTextStats(selectedMatch.players, selectedMatch.label, subtitle);
+      downloadText(content, selectedMatch.label ?? "statistiky");
+    } finally {
+      setSharingMatchText(false);
+    }
+  };
+
+  const handleShareAllText = () => {
+    if (sharingAllText) return;
+    setSharingAllText(true);
+    try {
+      const title =
+        (selectedTeamFilter ? teamLabel(selectedTeamFilter) : "Celkem") +
+        ` — ${filteredMatches.length} ${pluralZapas(filteredMatches.length)}`;
+      const content = generateTextStats(aggregated, title);
+      downloadText(content, selectedTeamFilter ? teamLabel(selectedTeamFilter) : "statistiky-celkem");
+    } finally {
+      setSharingAllText(false);
     }
   };
 
@@ -348,19 +475,36 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                       <CardTitle className="text-base">
                         {selectedMatch.label} · {selectedMatch.ourScore}:{selectedMatch.opponentScore}
                       </CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleShareMatch}
-                        disabled={sharingMatch}
-                        className="text-gray-500"
-                      >
-                        {sharingMatch ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Download className="size-4" />
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleShareMatchText}
+                          disabled={sharingMatchText}
+                          className="text-gray-500"
+                          title="Exportovat jako text"
+                        >
+                          {sharingMatchText ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <FileText className="size-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleShareMatch}
+                          disabled={sharingMatch}
+                          className="text-gray-500"
+                          title="Exportovat jako obrázek"
+                        >
+                          {sharingMatch ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Download className="size-4" />
+                          )}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <StatsTable players={selectedMatch.players} />
@@ -393,19 +537,36 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                     <CardTitle>
                       {selectedTeamFilter ? teamLabel(selectedTeamFilter) : "Celkem"} — {filteredMatches.length} {pluralZapas(filteredMatches.length)}
                     </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleShareAll}
-                      disabled={sharingAll}
-                      className="text-gray-500"
-                    >
-                      {sharingAll ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Download className="size-4" />
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleShareAllText}
+                        disabled={sharingAllText}
+                        className="text-gray-500"
+                        title="Exportovat jako text"
+                      >
+                        {sharingAllText ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <FileText className="size-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleShareAll}
+                        disabled={sharingAll}
+                        className="text-gray-500"
+                        title="Exportovat jako obrázek"
+                      >
+                        {sharingAll ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Download className="size-4" />
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <StatsTable players={aggregated} />
