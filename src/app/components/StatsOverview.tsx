@@ -19,11 +19,16 @@ function formatDate(isoDate: string): string {
   });
 }
 
+function normalizePlayerName(name: string): string {
+  return name.replace(/\s+C$/, "").trim();
+}
+
 function aggregatePlayers(matches: CompletedMatch[]): Player[] {
   const map = new Map<string, Player>();
   for (const match of matches) {
     for (const p of match.players) {
-      const existing = map.get(p.name);
+      const key = normalizePlayerName(p.name);
+      const existing = map.get(key);
       if (existing) {
         existing.shots = (existing.shots ?? 0) + (p.shots ?? 0);
         existing.goals += p.goals;
@@ -32,7 +37,7 @@ function aggregatePlayers(matches: CompletedMatch[]): Player[] {
         existing.minus += p.minus;
         existing.plusMinus += p.plusMinus;
       } else {
-        map.set(p.name, { ...p });
+        map.set(key, { ...p, name: key });
       }
     }
   }
@@ -144,7 +149,7 @@ function generateTextStats(players: Player[], title: string, subtitle?: string):
     const pm = (p.plusMinus >= 0 ? "+" : "") + String(p.plusMinus);
     lines.push(
       (p.number ?? "").padStart(3).padEnd(5) +
-        p.name.substring(0, 23).padEnd(24) +
+        normalizePlayerName(p.name).substring(0, 23).padEnd(24) +
         String(p.shots ?? 0).padStart(4) +
         String(p.goals).padStart(4) +
         String(p.assists).padStart(4) +
@@ -243,7 +248,7 @@ function StatsTable({ players }: { players: Player[] }) {
             className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 px-3 py-2 border-b last:border-b-0"
           >
             <div className="w-8 font-mono text-sm">{player.number}</div>
-            <div className="text-sm truncate">{player.name}</div>
+            <div className="text-sm truncate">{normalizePlayerName(player.name)}</div>
             <div className="w-10 text-center font-mono text-sm">{player.shots ?? 0}</div>
             <div className="w-10 text-center font-mono text-sm">{player.goals}</div>
             <div className="w-10 text-center font-mono text-sm">{player.assists}</div>
