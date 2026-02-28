@@ -97,6 +97,22 @@ export default function App() {
     setView("tracking");
   };
 
+  const handleAutoSave = (finalPlayers: Player[], ourScore: number, opponentScore: number) => {
+    const match: CompletedMatch = {
+      id: currentMatchStorageId,
+      date: new Date().toISOString(),
+      label: matchLabel || new Date().toLocaleDateString("cs-CZ"),
+      teamName: myTeamName || undefined,
+      competition: myCompetition,
+      fisMatchId: myFisMatchId,
+      ourScore,
+      opponentScore,
+      players: finalPlayers,
+      inProgress: true,
+    };
+    saveMatch(match);
+  };
+
   const handleFinishMatch = (
     finalPlayers: Player[],
     ourScore: number,
@@ -112,6 +128,7 @@ export default function App() {
       ourScore,
       opponentScore,
       players: finalPlayers,
+      inProgress: false,
     };
     saveMatch(match);
     setView("stats");
@@ -127,6 +144,7 @@ export default function App() {
         <LandingPage
           onStart={() => setView("loader")}
           onShowStats={() => setView("stats")}
+          onContinueMatch={handleContinueMatch}
         />
       )}
       {view === "loader" && (
@@ -156,10 +174,11 @@ export default function App() {
           initialOurScore={initialOurScore}
           initialOpponentScore={initialOpponentScore}
           onFinish={handleFinishMatch}
+          onAutoSave={handleAutoSave}
         />
       )}
       {view === "stats" && (
-        <StatsOverview onNewMatch={() => setView("loader")} />
+        <StatsOverview onNewMatch={() => setView("loader")} onContinueMatch={handleContinueMatch} />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Player } from "./PlayerSetup";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -16,6 +16,7 @@ interface MatchTrackingProps {
   initialOurScore?: number;
   initialOpponentScore?: number;
   onFinish: (players: Player[], ourScore: number, opponentScore: number) => void;
+  onAutoSave?: (players: Player[], ourScore: number, opponentScore: number) => void;
 }
 
 type StatKey = "shots" | "goals" | "assists" | "plus" | "minus";
@@ -144,12 +145,22 @@ function GroupSection({ title, titleClass, players, lines, showReassign, onStat,
   );
 }
 
-export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, myTeamName, opponentName, initialOurScore = 0, initialOpponentScore = 0, onFinish }: MatchTrackingProps) {
+export function MatchTracking({ initialPlayers, lines, matchLabel, matchDate, myTeamName, opponentName, initialOurScore = 0, initialOpponentScore = 0, onFinish, onAutoSave }: MatchTrackingProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [history, setHistory] = useState<Player[][]>([]);
   const [ourScore, setOurScore] = useState(initialOurScore);
   const [opponentScore, setOpponentScore] = useState(initialOpponentScore);
   const [sortBy, setSortBy] = useState<"formation" | "number" | "name">("formation");
+
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    onAutoSave?.(players, ourScore, opponentScore);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players, ourScore, opponentScore]);
 
   const undo = () => {
     setHistory(prev => {

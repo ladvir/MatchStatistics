@@ -37,6 +37,7 @@ export interface CompletedMatch {
   ourScore: number;
   opponentScore: number;
   players: Player[];
+  inProgress?: boolean; // true while match is being tracked (not yet finished)
 }
 
 export function getMatchByFisId(fisMatchId: string): CompletedMatch | undefined {

@@ -1,7 +1,7 @@
-import { Download, Users, Activity, BarChart2 } from "lucide-react";
+import { Download, Users, Activity, BarChart2, Play } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { getMatches } from "../services/storageService";
+import { CompletedMatch, getMatches } from "../services/storageService";
 
 const steps = [
   {
@@ -33,10 +33,13 @@ const steps = [
 interface LandingPageProps {
   onStart: () => void;
   onShowStats: () => void;
+  onContinueMatch?: (match: CompletedMatch) => void;
 }
 
-export function LandingPage({ onStart, onShowStats }: LandingPageProps) {
-  const hasMatches = getMatches().length > 0;
+export function LandingPage({ onStart, onShowStats, onContinueMatch }: LandingPageProps) {
+  const allMatches = getMatches();
+  const hasMatches = allMatches.length > 0;
+  const inProgressMatch = allMatches.find((m) => m.inProgress);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -63,6 +66,16 @@ export function LandingPage({ onStart, onShowStats }: LandingPageProps) {
         ))}
 
         <div className="space-y-2 pt-2">
+          {inProgressMatch && onContinueMatch && (
+            <Button
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+              size="lg"
+              onClick={() => onContinueMatch(inProgressMatch)}
+            >
+              <Play className="size-4 mr-2" />
+              Pokračovat: {inProgressMatch.label}
+            </Button>
+          )}
           <Button className="w-full" size="lg" onClick={onStart}>
             Začít nový zápas
           </Button>

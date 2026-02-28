@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, FileText, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, ChevronsUpDown, Download, FileText, Loader2, Play, Trash2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -9,6 +9,7 @@ import { Player } from "./PlayerSetup";
 
 interface StatsOverviewProps {
   onNewMatch: () => void;
+  onContinueMatch?: (match: CompletedMatch) => void;
 }
 
 function formatDate(isoDate: string): string {
@@ -273,7 +274,7 @@ function StatsTable({ players }: { players: Player[] }) {
   );
 }
 
-export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
+export function StatsOverview({ onNewMatch, onContinueMatch }: StatsOverviewProps) {
   const [matches, setMatches] = useState<CompletedMatch[]>(() => getMatches());
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
     () => getMatches()[0]?.id ?? null,
@@ -447,27 +448,50 @@ export function StatsOverview({ onNewMatch }: StatsOverviewProps) {
                       key={m.id}
                       onClick={() => setSelectedMatchId(m.id)}
                       className={`flex items-center justify-between p-3 border rounded cursor-pointer transition-colors ${
-                        selectedMatchId === m.id
+                        m.inProgress
+                          ? selectedMatchId === m.id
+                            ? "bg-amber-100 border-amber-400"
+                            : "bg-amber-50 border-amber-300 hover:bg-amber-100"
+                          : selectedMatchId === m.id
                           ? "bg-gray-100 border-gray-400"
                           : "bg-white hover:bg-gray-50"
                       }`}
                     >
-                      <div>
-                        <div className="font-medium text-sm">{m.label}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{m.label}</span>
+                          {m.inProgress && (
+                            <span className="text-xs font-semibold text-amber-700 bg-amber-200 rounded px-1.5 py-0.5 shrink-0">Probíhá</span>
+                          )}
+                        </div>
                         <div className="text-xs text-gray-500">
                           {[formatDate(m.date), `${m.ourScore}:${m.opponentScore}`, teamKeys.length > 1 ? (m.competition ? `${m.teamName} · ${m.competition}` : m.teamName) : undefined].filter(Boolean).join(" · ")}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(m.id);
-                        }}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        title="Smazat zápas"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      <div className="flex items-center gap-1 ml-2 shrink-0">
+                        {m.inProgress && onContinueMatch && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onContinueMatch(m);
+                            }}
+                            className="p-1 text-amber-600 hover:text-amber-800 transition-colors"
+                            title="Pokračovat v zápase"
+                          >
+                            <Play className="size-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(m.id);
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Smazat zápas"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </CardContent>
